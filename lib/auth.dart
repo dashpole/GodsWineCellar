@@ -4,6 +4,10 @@ import 'package:flutter_auth_buttons/flutter_auth_buttons.dart';
 import 'package:flutter/material.dart';
 
 class LoginWithGoogleButton extends StatefulWidget {
+  final FirebaseUser firebaseUser;
+
+  LoginWithGoogleButton(this.firebaseUser);
+
   @override
   _LoginWithGoogleButtonState createState() => _LoginWithGoogleButtonState();
 }
@@ -11,19 +15,18 @@ class LoginWithGoogleButton extends StatefulWidget {
 class _LoginWithGoogleButtonState extends State<LoginWithGoogleButton> {
   static FirebaseAuth _auth = FirebaseAuth.instance;
   static GoogleSignIn _googleSignIn = GoogleSignIn();
-  FirebaseUser firebaseUser;
 
   void _handleSignInWithGoogle() async {
     try {
       final GoogleSignInAccount googleUser = await _googleSignIn.signIn();
-      final GoogleSignInAuthentication googleAuth = await googleUser
-          .authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.getCredential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final FirebaseUser user = (await _auth.signInWithCredential(credential))
-          .user;
+      final FirebaseUser user =
+          (await _auth.signInWithCredential(credential)).user;
 
       assert(user.email != null);
       assert(user.displayName != null);
@@ -33,10 +36,7 @@ class _LoginWithGoogleButtonState extends State<LoginWithGoogleButton> {
       assert(user.uid == currentUser.uid);
       print("Successful login");
       print(currentUser.toString());
-      setState(() {
-        firebaseUser = user;
-      });
-    } on Error catch (e){
+    } on Error catch (e) {
       print("There was an error with login");
       print(e);
     }
@@ -46,11 +46,7 @@ class _LoginWithGoogleButtonState extends State<LoginWithGoogleButton> {
     try {
       await _auth.signOut();
       await _googleSignIn.signOut();
-      setState(() {
-        firebaseUser = null;
-        print("Successful Logout");
-      });
-    } on Error catch (e){
+    } on Error catch (e) {
       print("There was an error with signout");
       print(e);
     }
@@ -58,17 +54,14 @@ class _LoginWithGoogleButtonState extends State<LoginWithGoogleButton> {
 
   @override
   Widget build(BuildContext context) {
-    if (firebaseUser == null) {
+    if (widget.firebaseUser == null) {
       return GoogleSignInButton(
         onPressed: _handleSignInWithGoogle,
       );
     } else {
       return RaisedButton(
-          onPressed: _handleSignOutWithGoogle,
-          child: Text(
-          'Logout',
-          style: TextStyle(fontSize: 20)
-        ),
+        onPressed: _handleSignOutWithGoogle,
+        child: Text('Logout', style: TextStyle(fontSize: 20)),
       );
     }
   }

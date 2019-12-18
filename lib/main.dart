@@ -50,13 +50,18 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text('God\'s Wine Cellar'),
         actions: <Widget>[
-          LoginWithGoogleButton(),
+        StreamBuilder<FirebaseUser>(
+          stream: _auth.onAuthStateChanged,
+          builder: (context, firebaseUser) {
+            return LoginWithGoogleButton(firebaseUser.data);
+          },
+        ),
       ],
       ),
       body: StreamBuilder<FirebaseUser>(
         stream: _auth.onAuthStateChanged,
         builder: (context, firebaseUser) {
-          if (!firebaseUser.hasData) return Text('Please Login to view your wine');
+          if !firebaseUser.hasData return Text('Please Login to view your wine');
           return StreamBuilder<QuerySnapshot>(
             stream: Firestore.instance.collection(firebaseUser.data.uid).snapshots(),
             builder: (context, snapshot) {
