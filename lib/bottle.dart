@@ -224,7 +224,7 @@ class BottleUpdateService {
   final CollectionReference bottleCollection;
 
   BottleUpdateService(String userID)
-      : bottleCollection = Firestore.instance.collection(userID);
+      : bottleCollection = Firestore.instance.collection("users").document(userID).collection("wines");
 
   Future addBottle(String name, String winery) async {
     return await bottleCollection

@@ -61,9 +61,10 @@ class _MyHomePageState extends State<MyHomePage> {
       body: StreamBuilder<FirebaseUser>(
         stream: _auth.onAuthStateChanged,
         builder: (context, firebaseUser) {
-          if !firebaseUser.hasData return Text('Please Login to view your wine');
+          // if the user has dat (if logged in), go to the collection by user ID
+          if (!firebaseUser.hasData) return Text('Please Login to view your wine');
           return StreamBuilder<QuerySnapshot>(
-            stream: Firestore.instance.collection(firebaseUser.data.uid).snapshots(),
+            stream: Firestore.instance.collection("users").document(firebaseUser.data.uid).collection("wines").snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) return LinearProgressIndicator();
               return BottleList(snapshot.data.documents, firebaseUser.data.uid);
