@@ -37,13 +37,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   static FirebaseAuth _auth = FirebaseAuth.instance;
-  int _selectedIndex = 0;
-
-  void _onNavBarItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,12 +46,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
-    List<BottomNavigationBarItem> bottomNavBarItems;
-    BottomNavigationBarItem wineListNavItem = BottomNavigationBarItem(
-        icon: Icon(Icons.list), title: Text("Wine List"));
-    BottomNavigationBarItem fridgeNavItem = BottomNavigationBarItem(
-        icon: Icon(Icons.ac_unit), title: Text("Fridge List"));
-    bottomNavBarItems = [wineListNavItem, fridgeNavItem];
 
     return StreamBuilder<FirebaseUser>(
       stream: _auth.onAuthStateChanged,
@@ -71,43 +58,74 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             body: Text('Please Login to view your wine'),
           );
-        return Scaffold(
-          appBar: AppBar(
-            title: Text('God\'s Wine Cellar'),
-            actions: <Widget>[LoginWithGoogleButton(firebaseUser.data)],
-          ),
-          body: <Widget>[
-            StreamBuilder<QuerySnapshot>(
-              stream: Firestore.instance
-                  .collection("users")
-                  .document(firebaseUser.data.uid)
-                  .collection("wines")
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return LinearProgressIndicator();
-                return BottleList(
-                    snapshot.data.documents, firebaseUser.data.uid);
-              },
-            ),
-            Center(
-              child: Text(
-                'Index 1: Fridges',
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ][_selectedIndex],
-          floatingActionButton: AddBottleButton(firebaseUser.data.uid),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
-          bottomNavigationBar: BottomAppBar(
-            shape: const CircularNotchedRectangle(),
-            child: BottomNavigationBar(
-                items: bottomNavBarItems,
-                currentIndex: _selectedIndex,
-                onTap: _onNavBarItemTapped),
-          ),
-        );
+        return MainBody(firebaseUser);
       },
+    );
+  }
+}
+
+class MainBody extends StatefulWidget {
+  final AsyncSnapshot<FirebaseUser> _user;
+
+  MainBody(this._user);
+
+  @override
+  _MainBodyState createState() => _MainBodyState();
+}
+
+class _MainBodyState extends State<MainBody> {
+  int _selectedIndex = 0;
+
+  void _onNavBarItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  List<BottomNavigationBarItem> _bottomNavBarItems = [
+    BottomNavigationBarItem(
+        icon: Icon(Icons.list), title: Text("Wine List")),
+    BottomNavigationBarItem(
+        icon: Icon(Icons.ac_unit), title: Text("Fridge List")),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('God\'s Wine Cellar'),
+        actions: <Widget>[LoginWithGoogleButton(widget._user.data)],
+      ),
+      body: <Widget>[
+        StreamBuilder<QuerySnapshot>(
+          stream: Firestore.instance
+              .collection("users")
+              .document(widget._user.data.uid)
+              .collection("wines")
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return Container();
+            return BottleList(
+                snapshot.data.documents, widget._user.data.uid);
+          },
+        ),
+        Center(
+          child: Text(
+            'Index 1: Fridges',
+            style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ][_selectedIndex],
+      floatingActionButton: AddBottleButton(widget._user.data.uid),
+      floatingActionButtonLocation:
+      FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        child: BottomNavigationBar(
+            items: _bottomNavBarItems,
+            currentIndex: _selectedIndex,
+            onTap: _onNavBarItemTapped),
+      ),
     );
   }
 }
