@@ -3,66 +3,50 @@ import 'package:flutter/material.dart';
 import 'fridge_row.dart';
 
 class Fridge {
-  final String name;
-  final DocumentReference reference;
-  final String uid;
+  final String _name;
+  final String _uid;
 
   // Load Fridge from a Fridge Document ("snapshot")
   // Create object in memory to hold a fridge
   Fridge.fromSnapshot(DocumentSnapshot snapshot)
       : assert(snapshot.data['name'] != null),
-        reference = snapshot.reference,
-        name = snapshot.data['name'],
-        uid = snapshot.documentID;
+        _name = snapshot.data['name'],
+        _uid = snapshot.documentID;
 
   @override
-  String toString() => "Fridge<$name>";
+  String toString() => "Fridge<$_name>";
 }
 
 class FridgeUpdateService {
-  final CollectionReference fridgeCollection;
-  final String userID;
+  final CollectionReference _collection;
+  final String _userID;
 
   FridgeUpdateService(String userID)
-      : fridgeCollection = Firestore.instance
+      : _collection = Firestore.instance
             .collection("users")
             .document(userID)
             .collection("fridges"),
-        userID = userID;
+        _userID = userID;
 
   Future addFridge(String name, int numRows, int rowCapacity) async {
-    DocumentReference newFridge = fridgeCollection.document();
+    DocumentReference newFridge = _collection.document();
     await newFridge.setData({'name': name});
     final FridgeRowUpdateService fridgeRowUpdateService =
-        FridgeRowUpdateService(userID, newFridge.documentID);
+        FridgeRowUpdateService(_userID, newFridge.documentID);
     for (var i = 0; i < numRows; i++) {
       fridgeRowUpdateService.addFridgeRow(i, rowCapacity);
     }
   }
 
   Future deleteFridge(Fridge fridge) async {
-    return await fridgeCollection.document(fridge.uid).delete();
+    return await _collection.document(fridge._uid).delete();
   }
-
-//  Future updateBottle(Bottle old, String name, String winery) async {
-//    Map<String, dynamic> data = {};
-//    if (name != old.name) {
-//      data['name'] = name;
-//    }
-//    if (winery != old.winery) {
-//      data['winery'] = winery;
-//    }
-//    if (data.isEmpty) {
-//      return;
-//    }
-//    return await bottleCollection.document(old.uid).updateData(data);
-//  }
 }
 
 class FridgeForm extends StatefulWidget {
-  final TextEditingController fridgeNameController;
-  final TextEditingController fridgeNumRowsController;
-  final TextEditingController fridgeRowCapController;
+  final TextEditingController _nameController,
+      _numRowsController,
+      _rowCapController;
   final GlobalKey<FormState> _formKey;
 
   @override
@@ -70,8 +54,8 @@ class FridgeForm extends StatefulWidget {
     return FridgeFormState();
   }
 
-  FridgeForm(this.fridgeNameController, this.fridgeNumRowsController,
-      this.fridgeRowCapController, this._formKey);
+  FridgeForm(this._nameController, this._numRowsController,
+      this._rowCapController, this._formKey);
 }
 
 class FridgeFormState extends State<FridgeForm> {
@@ -85,7 +69,7 @@ class FridgeFormState extends State<FridgeForm> {
             Padding(
               child: TextFormField(
                 autofocus: true,
-                controller: widget.fridgeNameController,
+                controller: widget._nameController,
                 validator: (value) {
                   if (value.isEmpty) {
                     return 'Please enter a fridge name';
@@ -103,7 +87,7 @@ class FridgeFormState extends State<FridgeForm> {
             Padding(
               child: TextFormField(
                 keyboardType: TextInputType.number,
-                controller: widget.fridgeNumRowsController,
+                controller: widget._numRowsController,
                 validator: (value) {
                   if (value.isEmpty) {
                     return 'Please enter a number of rows';
@@ -124,7 +108,7 @@ class FridgeFormState extends State<FridgeForm> {
             Padding(
               child: TextFormField(
                 keyboardType: TextInputType.number,
-                controller: widget.fridgeRowCapController,
+                controller: widget._rowCapController,
                 validator: (value) {
                   if (value.isEmpty) {
                     return 'Please enter a row capacity';
@@ -150,11 +134,13 @@ class FridgeFormState extends State<FridgeForm> {
 }
 
 class FridgeList extends StatefulWidget {
-  final List<DocumentSnapshot> documents;
-  final FridgeUpdateService fridgeUpdateService;
+  final List<DocumentSnapshot> _documents;
+  final FridgeUpdateService _updateService;
+  final String _userID;
 
-  FridgeList(this.documents, String userID)
-      : fridgeUpdateService = FridgeUpdateService(userID);
+  FridgeList(this._documents, String userID)
+      : _updateService = FridgeUpdateService(userID),
+        _userID = userID;
 
   @override
   _FridgeListState createState() => _FridgeListState();
@@ -168,11 +154,11 @@ class _FridgeListState extends State<FridgeList> {
     return ListView.builder(
       padding: const EdgeInsets.only(top: 20.0),
       // data is a DocumentSnapshot
-      itemCount: widget.documents.length + 1,
+      itemCount: widget._documents.length + 1,
       //The `itemBuilder` callback will be called only with indices greater than
       //or equal to zero and less than `itemCount`.
       itemBuilder: (context, index) {
-        if (index == widget.documents.length) {
+        if (index == widget._documents.length) {
           return Padding(
             key: ValueKey("Add a fridge"),
             padding:
@@ -195,18 +181,18 @@ class _FridgeListState extends State<FridgeList> {
           );
         }
         return _buildFridgeItem(
-            context, widget.documents[index], widget.fridgeUpdateService);
+            context, widget._documents[index], widget._updateService);
       },
     );
   }
 
   Widget _buildFridgeItem(BuildContext context, DocumentSnapshot data,
       FridgeUpdateService fridgeUpdateService) {
-    final fridge = Fridge.fromSnapshot(data);
+    final _fridge = Fridge.fromSnapshot(data);
 
 // Build a list of bottle items
     return Padding(
-      key: ValueKey(fridge.uid),
+      key: ValueKey(_fridge._uid),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Container(
         decoration: BoxDecoration(
@@ -214,7 +200,7 @@ class _FridgeListState extends State<FridgeList> {
           borderRadius: BorderRadius.circular(5.0),
         ),
         child: ListTile(
-          title: Text(fridge.name),
+          title: Text(_fridge._name),
           onLongPress: () => showDialog(
               context: context,
               builder: (context) {
@@ -228,7 +214,7 @@ class _FridgeListState extends State<FridgeList> {
                       child: Text('Yes'),
                       textColor: Colors.red,
                       onPressed: () async {
-                        await fridgeUpdateService.deleteFridge(fridge);
+                        await fridgeUpdateService.deleteFridge(_fridge);
                         Navigator.of(context).pop();
                       },
                     ),
@@ -240,39 +226,49 @@ class _FridgeListState extends State<FridgeList> {
                   ],
                 );
               }),
+          onTap: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FridgeRowListPage(
+                      widget._userID, _fridge._uid.toString()),
+                ));
+          },
         ),
       ),
     );
   }
 
   _addFridgeDialog(BuildContext context) {
-    TextEditingController fridgeNameController = TextEditingController();
-    TextEditingController fridgeNumRowsController = TextEditingController();
-    TextEditingController fridgeRowCapController = TextEditingController();
+    TextEditingController _nameController = TextEditingController();
+    TextEditingController _numRowsController = TextEditingController();
+    TextEditingController _rowCapController = TextEditingController();
 
     return showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("Add Your Fridge"),
-            content: FridgeForm(fridgeNameController, fridgeNumRowsController,
-                fridgeRowCapController, this._formKey),
-            actions: <Widget>[
-              MaterialButton(
-                elevation: 3.0,
-                child: Text('Submit'),
-                onPressed: () async {
-                  if (_formKey.currentState.validate()) {
-                    await widget.fridgeUpdateService.addFridge(
-                        fridgeNameController.text.toString(),
-                        int.parse(fridgeNumRowsController.text),
-                        int.parse(fridgeRowCapController.text));
-                    Navigator.of(context).pop();
-                  }
-                },
-              )
-            ],
-          );
-        });
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Add Your Fridge"),
+          content: FridgeForm(_nameController, _numRowsController,
+              _rowCapController, this._formKey),
+          actions: <Widget>[
+            MaterialButton(
+              elevation: 3.0,
+              child: Text('Submit'),
+              onPressed: () async {
+                if (_formKey.currentState.validate()) {
+                  await widget._updateService.addFridge(
+                    _nameController.text.toString(),
+                    int.parse(_numRowsController.text),
+                    int.parse(_rowCapController.text),
+                  );
+                  Navigator.of(context).pop();
+                }
+              },
+            )
+          ],
+        );
+      },
+    );
   }
 }

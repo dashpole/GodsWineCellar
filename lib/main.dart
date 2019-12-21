@@ -78,16 +78,8 @@ class _MainBodyState extends State<MainBody> {
   int _selectedIndex = 0;
 
   void _onNavBarItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
   }
-
-  List<BottomNavigationBarItem> _bottomNavBarItems = [
-    BottomNavigationBarItem(icon: Icon(Icons.list), title: Text("Wine List")),
-    BottomNavigationBarItem(
-        icon: Icon(Icons.ac_unit), title: Text("Fridge List")),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -105,9 +97,19 @@ class _MainBodyState extends State<MainBody> {
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         child: BottomNavigationBar(
-            items: _bottomNavBarItems,
-            currentIndex: _selectedIndex,
-            onTap: _onNavBarItemTapped),
+          items: <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.list),
+              title: Text("Wine List"),
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.ac_unit),
+              title: Text("Fridge List"),
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          onTap: _onNavBarItemTapped,
+        ),
       ),
     );
   }

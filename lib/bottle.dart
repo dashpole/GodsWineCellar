@@ -2,11 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class BottleList extends StatefulWidget {
-  final List<DocumentSnapshot> documents;
-  final BottleUpdateService bottleUpdateService;
+  final List<DocumentSnapshot> _documents;
+  final BottleUpdateService _updateService;
 
-  BottleList(this.documents, String userID)
-      : bottleUpdateService = BottleUpdateService(userID);
+  BottleList(this._documents, String userID)
+      : _updateService = BottleUpdateService(userID);
 
   @override
   _BottleListState createState() => _BottleListState();
@@ -18,21 +18,21 @@ class _BottleListState extends State<BottleList> {
     return ListView.builder(
       padding: const EdgeInsets.only(top: 20.0),
       // data is a DocumentSnapshot
-      itemCount: widget.documents.length,
+      itemCount: widget._documents.length,
       itemBuilder: (context, index) {
         return _buildBottleItem(
-            context, widget.documents[index], widget.bottleUpdateService);
+            context, widget._documents[index], widget._updateService);
       },
     );
   }
 
   Widget _buildBottleItem(BuildContext context, DocumentSnapshot data,
       BottleUpdateService bottleUpdateService) {
-    final wine = Bottle.fromSnapshot(data);
+    final _wine = Bottle.fromSnapshot(data);
 
 // Build a list of bottle items
     return Padding(
-      key: ValueKey(wine.uid),
+      key: ValueKey(_wine._uid),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Container(
         decoration: BoxDecoration(
@@ -40,8 +40,8 @@ class _BottleListState extends State<BottleList> {
           borderRadius: BorderRadius.circular(5.0),
         ),
         child: ListTile(
-          title: Text(wine.name),
-          subtitle: Text(wine.winery),
+          title: Text(_wine._name),
+          subtitle: Text(_wine._winery),
           trailing: PopupMenuButton(
             icon: Icon(Icons.menu),
             itemBuilder: (BuildContext context) {
@@ -53,19 +53,20 @@ class _BottleListState extends State<BottleList> {
                       trailing: Icon(Icons.delete),
                       onTap: () {
                         Navigator.pop(context);
-                        bottleUpdateService.deleteBottle(wine);
+                        bottleUpdateService.deleteBottle(_wine);
                       },
                     )),
                 PopupMenuItem(
-                    value: "edit",
-                    child: ListTile(
-                      title: Text("Edit"),
-                      trailing: Icon(Icons.edit),
-                      onTap: () {
-                        Navigator.pop(context);
-                        createEditWineDialog(context, wine);
-                      },
-                    ))
+                  value: "edit",
+                  child: ListTile(
+                    title: Text("Edit"),
+                    trailing: Icon(Icons.edit),
+                    onTap: () {
+                      Navigator.pop(context);
+                      createEditWineDialog(context, _wine);
+                    },
+                  ),
+                ),
               ];
             },
           ),
@@ -75,45 +76,48 @@ class _BottleListState extends State<BottleList> {
   }
 
   createEditWineDialog(BuildContext context, Bottle bottle) {
-    TextEditingController bottleNameController = TextEditingController();
-    bottleNameController.text = bottle.name;
-    TextEditingController bottleWineryController = TextEditingController();
-    bottleWineryController.text = bottle.winery;
-    TextEditingController bottleLocation = TextEditingController();
-    bottleLocation.text = "Default Location";
+    TextEditingController _nameController =
+        TextEditingController(text: bottle._name);
+    TextEditingController _wineryController =
+        TextEditingController(text: bottle._winery);
+    TextEditingController _locationController =
+        TextEditingController(text: bottle._location);
     GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
     return showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("Edit Your Wine"),
-            content: BottleForm(bottleNameController, bottleWineryController,
-                bottleLocation, _formKey),
-            actions: <Widget>[
-              MaterialButton(
-                elevation: 5.0,
-                child: Text('Submit'),
-                onPressed: () async {
-                  if (_formKey.currentState.validate()) {
-                    await widget.bottleUpdateService.updateBottle(
-                        bottle,
-                        bottleNameController.text.toString(),
-                        bottleWineryController.text.toString());
-                    Navigator.pop(context);
-                  }
-                },
-              )
-            ],
-          );
-        });
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Edit Your Wine"),
+          content: BottleForm(_nameController, _wineryController,
+              _locationController, _formKey),
+          actions: <Widget>[
+            MaterialButton(
+              elevation: 5.0,
+              child: Text('Submit'),
+              onPressed: () async {
+                if (_formKey.currentState.validate()) {
+                  await widget._updateService.updateBottle(
+                    bottle,
+                    _nameController.text.toString(),
+                    _wineryController.text.toString(),
+                    _locationController.text.toString(),
+                  );
+                  Navigator.pop(context);
+                }
+              },
+            )
+          ],
+        );
+      },
+    );
   }
 }
 
 class BottleForm extends StatefulWidget {
-  final TextEditingController bottleNameController;
-  final TextEditingController bottleWineryController;
-  final TextEditingController bottleLocation;
+  final TextEditingController _nameController;
+  final TextEditingController _wineryController;
+  final TextEditingController _locationController;
   final GlobalKey<FormState> _formKey;
 
   @override
@@ -121,18 +125,11 @@ class BottleForm extends StatefulWidget {
     return BottleFormState();
   }
 
-  BottleForm(this.bottleNameController, this.bottleWineryController,
-      this.bottleLocation, this._formKey);
+  BottleForm(this._nameController, this._wineryController,
+      this._locationController, this._formKey);
 }
 
 class BottleFormState extends State<BottleForm> {
-  //@override
-  //void dispose () {
-  //  widget.bottleNameController.dispose();
-  //  widget.bottleWineryController.dispose();
-  //  super.dispose();
-  //}
-
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Form(
@@ -143,7 +140,7 @@ class BottleFormState extends State<BottleForm> {
             Padding(
               child: TextFormField(
                 autofocus: true,
-                controller: widget.bottleNameController,
+                controller: widget._nameController,
                 validator: (value) {
                   if (value.isEmpty) {
                     return 'Please enter a bottle name';
@@ -160,7 +157,7 @@ class BottleFormState extends State<BottleForm> {
             ),
             Padding(
               child: TextFormField(
-                controller: widget.bottleWineryController,
+                controller: widget._wineryController,
                 validator: (value) {
                   if (value.isEmpty) {
                     return 'Please enter a bottle winery';
@@ -177,7 +174,7 @@ class BottleFormState extends State<BottleForm> {
             ),
             Padding(
               child: TextFormField(
-                controller: widget.bottleLocation,
+                controller: widget._locationController,
                 validator: (value) {
                   if (value.isEmpty) {
                     return 'Please enter a bottle location';
@@ -200,65 +197,66 @@ class BottleFormState extends State<BottleForm> {
 }
 
 class Bottle {
-  final String name;
-  final String winery;
-  final DocumentReference reference;
-  final String uid;
+  final String _name;
+  final String _winery;
+  final String _location;
+  final String _uid;
 
   Bottle.fromSnapshot(DocumentSnapshot snapshot)
       : assert(snapshot.data['name'] != null),
         assert(snapshot.data['winery'] != null),
-        reference = snapshot.reference,
-        name = snapshot.data['name'],
-        winery = snapshot.data['winery'],
-        uid = snapshot.documentID;
+        assert(snapshot.data['location'] != null),
+        _name = snapshot.data['name'],
+        _winery = snapshot.data['winery'],
+        _location = snapshot.data['location'],
+        _uid = snapshot.documentID;
 
   @override
-  String toString() => "Wine<$name:$winery>";
+  String toString() => "Wine<$_name:$_winery>";
 }
 
 class BottleUpdateService {
-  final CollectionReference bottleCollection;
+  final CollectionReference _collection;
 
   BottleUpdateService(String userID)
-      : bottleCollection = Firestore.instance
+      : _collection = Firestore.instance
             .collection("users")
             .document(userID)
             .collection("wines");
 
   Future addBottle(String name, String winery, String location) async {
-    return await bottleCollection
+    return await _collection
         .document()
         .setData({'name': name, 'winery': winery, 'location': location});
   }
 
   Future deleteBottle(Bottle bottle) async {
-    return await bottleCollection.document(bottle.uid).delete();
+    return await _collection.document(bottle._uid).delete();
   }
 
-  Future updateBottle(Bottle old, String name, String winery) async {
+  Future updateBottle(
+      Bottle old, String name, String winery, String location) async {
     Map<String, dynamic> data = {};
-    if (name != old.name) {
+    if (name != old._name) {
       data['name'] = name;
     }
-    if (winery != old.winery) {
+    if (winery != old._winery) {
       data['winery'] = winery;
+    }
+    if (location != old._location) {
+      data['location'] = location;
     }
     if (data.isEmpty) {
       return;
     }
-    return await bottleCollection.document(old.uid).updateData(data);
+    return await _collection.document(old._uid).updateData(data);
   }
 }
 
 class AddBottleButton extends StatefulWidget {
-  final BottleUpdateService bottleUpdateService;
+  final BottleUpdateService _updateService;
 
-  final String name = "test wine name";
-  final String winery = "test winery";
-
-  AddBottleButton(String userID)
-      : bottleUpdateService = BottleUpdateService(userID);
+  AddBottleButton(String userID) : _updateService = BottleUpdateService(userID);
 
   @override
   _AddBottleButtonState createState() => _AddBottleButtonState();
@@ -270,27 +268,27 @@ class _AddBottleButtonState extends State<AddBottleButton> {
   final _formKey = GlobalKey<FormState>();
 
   createAddWineDialog(BuildContext context) {
-    TextEditingController bottleNameController = TextEditingController();
-    TextEditingController bottleWineryController = TextEditingController();
-    TextEditingController bottleLocationController = TextEditingController();
+    TextEditingController _nameController = TextEditingController();
+    TextEditingController _wineryController = TextEditingController();
+    TextEditingController _locationController = TextEditingController();
 
     return showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
             title: Text("Add Your Wine"),
-            content: BottleForm(bottleNameController, bottleWineryController,
-                bottleLocationController, this._formKey),
+            content: BottleForm(_nameController, _wineryController,
+                _locationController, this._formKey),
             actions: <Widget>[
               MaterialButton(
                 elevation: 3.0,
                 child: Text('Submit'),
                 onPressed: () async {
                   if (_formKey.currentState.validate()) {
-                    await widget.bottleUpdateService.addBottle(
-                        bottleNameController.text.toString(),
-                        bottleWineryController.text.toString(),
-                        bottleLocationController.text.toString());
+                    await widget._updateService.addBottle(
+                        _nameController.text.toString(),
+                        _wineryController.text.toString(),
+                        _locationController.text.toString());
                     Navigator.of(context).pop();
                   }
                 },

@@ -4,9 +4,9 @@ import 'package:flutter_auth_buttons/flutter_auth_buttons.dart';
 import 'package:flutter/material.dart';
 
 class LoginWithGoogleButton extends StatefulWidget {
-  final FirebaseUser firebaseUser;
+  final FirebaseUser _user;
 
-  LoginWithGoogleButton(this.firebaseUser);
+  LoginWithGoogleButton(this._user);
 
   @override
   _LoginWithGoogleButtonState createState() => _LoginWithGoogleButtonState();
@@ -54,7 +54,7 @@ class _LoginWithGoogleButtonState extends State<LoginWithGoogleButton> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.firebaseUser == null) {
+    if (widget._user == null) {
       return GoogleSignInButton(
         onPressed: _handleSignInWithGoogle,
       );
