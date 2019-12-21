@@ -1,7 +1,5 @@
 import 'dart:ffi';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 
 class FridgeRow {
   final Int8 number;
@@ -26,10 +24,14 @@ class FridgeRowUpdateService {
   final CollectionReference fridgeRowCollection;
 
   FridgeRowUpdateService(String userID, String fridgeID)
-      : fridgeRowCollection = Firestore.instance.collection("users").
-  document(userID).collection("fridges").document(fridgeID).collection("rows");
+      : fridgeRowCollection = Firestore.instance
+            .collection("users")
+            .document(userID)
+            .collection("fridges")
+            .document(fridgeID)
+            .collection("rows");
 
-  Future addFridgeRow(Int8 number, Int8 capacity) async {
+  Future addFridgeRow(int number, int capacity) async {
     return await fridgeRowCollection
         .document()
         .setData({'number': number, 'capacity': capacity});

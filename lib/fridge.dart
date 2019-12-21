@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'fridge_row.dart';
 
 class Fridge {
   final String name;
@@ -20,15 +21,23 @@ class Fridge {
 
 class FridgeUpdateService {
   final CollectionReference fridgeCollection;
+  final String userID;
 
   FridgeUpdateService(String userID)
       : fridgeCollection = Firestore.instance
             .collection("users")
             .document(userID)
-            .collection("fridges");
+            .collection("fridges"),
+        userID = userID;
 
-  Future addFridge(String name) async {
-    return await fridgeCollection.document().setData({'name': name});
+  Future addFridge(String name, int numRows, int rowCapacity) async {
+    DocumentReference newFridge = fridgeCollection.document();
+    await newFridge.setData({'name': name});
+    final FridgeRowUpdateService fridgeRowUpdateService =
+        FridgeRowUpdateService(userID, newFridge.documentID);
+    for (var i = 0; i < numRows; i++) {
+      fridgeRowUpdateService.addFridgeRow(i, rowCapacity);
+    }
   }
 
   Future deleteFridge(Fridge fridge) async {
@@ -52,6 +61,8 @@ class FridgeUpdateService {
 
 class FridgeForm extends StatefulWidget {
   final TextEditingController fridgeNameController;
+  final TextEditingController fridgeNumRowsController;
+  final TextEditingController fridgeRowCapController;
   final GlobalKey<FormState> _formKey;
 
   @override
@@ -59,7 +70,8 @@ class FridgeForm extends StatefulWidget {
     return FridgeFormState();
   }
 
-  FridgeForm(this.fridgeNameController, this._formKey);
+  FridgeForm(this.fridgeNameController, this.fridgeNumRowsController,
+      this.fridgeRowCapController, this._formKey);
 }
 
 class FridgeFormState extends State<FridgeForm> {
@@ -88,6 +100,48 @@ class FridgeFormState extends State<FridgeForm> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7.0),
             ),
+            Padding(
+              child: TextFormField(
+                keyboardType: TextInputType.number,
+                controller: widget.fridgeNumRowsController,
+                validator: (value) {
+                  if (value.isEmpty) {
+                    return 'Please enter a number of rows';
+                  }
+                  if (!(int.tryParse(value) is int)) {
+                    return 'Please enter a number';
+                  }
+                  return null;
+                },
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Number of Rows',
+                ),
+              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7.0),
+            ),
+            Padding(
+              child: TextFormField(
+                keyboardType: TextInputType.number,
+                controller: widget.fridgeRowCapController,
+                validator: (value) {
+                  if (value.isEmpty) {
+                    return 'Please enter a row capacity';
+                  }
+                  if (!(int.tryParse(value) is int)) {
+                    return 'Please enter a number';
+                  }
+                  return null;
+                },
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Row Capacity',
+                ),
+              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7.0),
+            )
           ],
         ),
       ),
@@ -161,6 +215,31 @@ class _FridgeListState extends State<FridgeList> {
         ),
         child: ListTile(
           title: Text(fridge.name),
+          onLongPress: () => showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: Text("Confirm Delete Fridge"),
+                  content:
+                      Text("Are you sure you want to delete your fridge? \n"
+                          "This will delete all wines in your fridge."),
+                  actions: <Widget>[
+                    FlatButton(
+                      child: Text('Yes'),
+                      textColor: Colors.red,
+                      onPressed: () async {
+                        await fridgeUpdateService.deleteFridge(fridge);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    FlatButton(
+                      child: Text('Cancel'),
+                      textColor: Colors.grey,
+                      onPressed: () => Navigator.of(context).pop(),
+                    )
+                  ],
+                );
+              }),
         ),
       ),
     );
@@ -168,21 +247,26 @@ class _FridgeListState extends State<FridgeList> {
 
   _addFridgeDialog(BuildContext context) {
     TextEditingController fridgeNameController = TextEditingController();
+    TextEditingController fridgeNumRowsController = TextEditingController();
+    TextEditingController fridgeRowCapController = TextEditingController();
 
     return showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
             title: Text("Add Your Fridge"),
-            content: FridgeForm(fridgeNameController, this._formKey),
+            content: FridgeForm(fridgeNameController, fridgeNumRowsController,
+                fridgeRowCapController, this._formKey),
             actions: <Widget>[
               MaterialButton(
                 elevation: 3.0,
                 child: Text('Submit'),
                 onPressed: () async {
                   if (_formKey.currentState.validate()) {
-                    await widget.fridgeUpdateService
-                        .addFridge(fridgeNameController.text.toString());
+                    await widget.fridgeUpdateService.addFridge(
+                        fridgeNameController.text.toString(),
+                        int.parse(fridgeNumRowsController.text),
+                        int.parse(fridgeRowCapController.text));
                     Navigator.of(context).pop();
                   }
                 },
