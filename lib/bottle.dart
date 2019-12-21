@@ -20,12 +20,9 @@ class _BottleListState extends State<BottleList> {
       // data is a DocumentSnapshot
       itemCount: widget.documents.length,
       itemBuilder: (context, index) {
-        return _buildBottleItem(context, widget.documents[index], widget.bottleUpdateService);
+        return _buildBottleItem(
+            context, widget.documents[index], widget.bottleUpdateService);
       },
-//      children: widget.documents
-//          .map((documentData) => _buildBottleItem(
-//              context, documentData, widget.bottleUpdateService))
-//          .toList(),
     );
   }
 
@@ -224,12 +221,15 @@ class BottleUpdateService {
   final CollectionReference bottleCollection;
 
   BottleUpdateService(String userID)
-      : bottleCollection = Firestore.instance.collection("users").document(userID).collection("wines");
+      : bottleCollection = Firestore.instance
+            .collection("users")
+            .document(userID)
+            .collection("wines");
 
-  Future addBottle(String name, String winery) async {
+  Future addBottle(String name, String winery, String location) async {
     return await bottleCollection
         .document()
-        .setData({'name': name, 'winery': winery});
+        .setData({'name': name, 'winery': winery, 'location': location});
   }
 
   Future deleteBottle(Bottle bottle) async {
@@ -289,7 +289,8 @@ class _AddBottleButtonState extends State<AddBottleButton> {
                   if (_formKey.currentState.validate()) {
                     await widget.bottleUpdateService.addBottle(
                         bottleNameController.text.toString(),
-                        bottleWineryController.text.toString());
+                        bottleWineryController.text.toString(),
+                        bottleLocationController.text.toString());
                     Navigator.of(context).pop();
                   }
                 },

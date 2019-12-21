@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gods_wine_locator/bottle.dart';
 import 'auth.dart';
 import 'bottle.dart';
+import 'fridge.dart';
 
 void main() => runApp(MyApp());
 
@@ -83,8 +84,7 @@ class _MainBodyState extends State<MainBody> {
   }
 
   List<BottomNavigationBarItem> _bottomNavBarItems = [
-    BottomNavigationBarItem(
-        icon: Icon(Icons.list), title: Text("Wine List")),
+    BottomNavigationBarItem(icon: Icon(Icons.list), title: Text("Wine List")),
     BottomNavigationBarItem(
         icon: Icon(Icons.ac_unit), title: Text("Fridge List")),
   ];
@@ -97,28 +97,11 @@ class _MainBodyState extends State<MainBody> {
         actions: <Widget>[LoginWithGoogleButton(widget._user.data)],
       ),
       body: <Widget>[
-        StreamBuilder<QuerySnapshot>(
-          stream: Firestore.instance
-              .collection("users")
-              .document(widget._user.data.uid)
-              .collection("wines")
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return Container();
-            return BottleList(
-                snapshot.data.documents, widget._user.data.uid);
-          },
-        ),
-        Center(
-          child: Text(
-            'Index 1: Fridges',
-            style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-          ),
-        ),
+        BottleBody(widget._user),
+        FridgeBody(widget._user),
       ][_selectedIndex],
       floatingActionButton: AddBottleButton(widget._user.data.uid),
-      floatingActionButtonLocation:
-      FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         child: BottomNavigationBar(
@@ -126,6 +109,58 @@ class _MainBodyState extends State<MainBody> {
             currentIndex: _selectedIndex,
             onTap: _onNavBarItemTapped),
       ),
+    );
+  }
+}
+
+class BottleBody extends StatefulWidget {
+  final AsyncSnapshot<FirebaseUser> _user;
+
+  BottleBody(this._user);
+
+  @override
+  _BottleBodyState createState() => _BottleBodyState();
+}
+
+class _BottleBodyState extends State<BottleBody> {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: Firestore.instance
+          .collection("users")
+          .document(widget._user.data.uid)
+          .collection("wines")
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return Container();
+        return BottleList(snapshot.data.documents, widget._user.data.uid);
+      },
+    );
+  }
+}
+
+class FridgeBody extends StatefulWidget {
+  final AsyncSnapshot<FirebaseUser> _user;
+
+  FridgeBody(this._user);
+
+  @override
+  _FridgeBodyState createState() => _FridgeBodyState();
+}
+
+class _FridgeBodyState extends State<FridgeBody> {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: Firestore.instance
+          .collection("users")
+          .document(widget._user.data.uid)
+          .collection("fridges")
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return Container();
+        return FridgeList(snapshot.data.documents, widget._user.data.uid);
+      },
     );
   }
 }
