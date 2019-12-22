@@ -71,6 +71,8 @@ class _BottleListState extends State<BottleList> {
         TextEditingController(text: bottle._winery);
     TextEditingController _locationController =
         TextEditingController(text: bottle._location);
+    TextEditingController _countController =
+        TextEditingController(text: bottle._count.toString());
     GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
     return showDialog(
@@ -79,7 +81,7 @@ class _BottleListState extends State<BottleList> {
         return AlertDialog(
           title: Text("Edit Your Wine"),
           content: BottleForm(_nameController, _wineryController,
-              _locationController, _formKey),
+              _locationController, _countController, _formKey),
           actions: <Widget>[
             MaterialButton(
               elevation: 5.0,
@@ -88,9 +90,10 @@ class _BottleListState extends State<BottleList> {
                 if (_formKey.currentState.validate()) {
                   await widget._updateService.updateBottle(
                     bottle,
-                    _nameController.text.toString(),
-                    _wineryController.text.toString(),
-                    _locationController.text.toString(),
+                    _nameController.text,
+                    _wineryController.text,
+                    _locationController.text,
+                    int.parse(_countController.text),
                   );
                   Navigator.pop(context);
                 }
@@ -124,7 +127,19 @@ class BottleListItem extends StatelessWidget {
         child: ListTile(
           title: Text(bottle._name),
           subtitle: Text(bottle._winery),
-          trailing: trailing,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                'x${bottle._count}',
+                textScaleFactor: 1.5,
+              ),
+              Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12.0, vertical: 8.0)),
+              (trailing == null) ? Container() : trailing,
+            ],
+          ),
         ),
       ),
     );
@@ -135,6 +150,7 @@ class BottleForm extends StatefulWidget {
   final TextEditingController _nameController;
   final TextEditingController _wineryController;
   final TextEditingController _locationController;
+  final TextEditingController _countController;
   final GlobalKey<FormState> _formKey;
 
   @override
@@ -143,7 +159,7 @@ class BottleForm extends StatefulWidget {
   }
 
   BottleForm(this._nameController, this._wineryController,
-      this._locationController, this._formKey);
+      this._locationController, this._countController, this._formKey);
 }
 
 class BottleFormState extends State<BottleForm> {
@@ -206,6 +222,27 @@ class BottleFormState extends State<BottleForm> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7.0),
             ),
+            Padding(
+              child: TextFormField(
+                keyboardType: TextInputType.number,
+                controller: widget._countController,
+                validator: (value) {
+                  if (value.isEmpty) {
+                    return 'Please enter a number of bottles';
+                  }
+                  if (!(int.tryParse(value) is int)) {
+                    return 'Please enter a number';
+                  }
+                  return null;
+                },
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Count',
+                ),
+              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7.0),
+            ),
           ],
         ),
       ),
@@ -217,6 +254,7 @@ class Bottle {
   final String _name;
   final String _winery;
   final String _location;
+  final int _count;
   final String _uid;
 
   String get uid {
@@ -224,10 +262,16 @@ class Bottle {
   }
 
   Map<String, dynamic> get data {
-    return {'name': _name, 'winery': _winery, 'location': _location};
+    return {
+      'name': _name,
+      'winery': _winery,
+      'location': _location,
+      'count': _count
+    };
   }
 
-  Map<String, dynamic> diff(String name, String winery, String location) {
+  Map<String, dynamic> diff(
+      String name, String winery, String location, int count) {
     Map<String, dynamic> data = {};
     if (name != _name) {
       data['name'] = name;
@@ -238,6 +282,9 @@ class Bottle {
     if (location != _location) {
       data['location'] = location;
     }
+    if (count != _count) {
+      data['count'] = count;
+    }
     return data;
   }
 
@@ -245,9 +292,11 @@ class Bottle {
       : assert(snapshot.data['name'] != null),
         assert(snapshot.data['winery'] != null),
         assert(snapshot.data['location'] != null),
+        assert(snapshot.data['count'] != null),
         _name = snapshot.data['name'],
         _winery = snapshot.data['winery'],
         _location = snapshot.data['location'],
+        _count = snapshot.data['count'],
         _uid = snapshot.documentID;
 
   @override
@@ -263,19 +312,19 @@ class BottleUpdateService {
             .document(userID)
             .collection("wines");
 
-  Future addBottle(String name, String winery, String location) async {
-    return await _collection
-        .document()
-        .setData({'name': name, 'winery': winery, 'location': location});
+  Future addBottle(
+      String name, String winery, String location, int count) async {
+    return await _collection.document().setData(
+        {'name': name, 'winery': winery, 'location': location, 'count': count});
   }
 
   Future deleteBottle(Bottle bottle) async {
     return await _collection.document(bottle._uid).delete();
   }
 
-  Future updateBottle(
-      Bottle old, String name, String winery, String location) async {
-    Map<String, dynamic> data = old.diff(name, winery, location);
+  Future updateBottle(Bottle old, String name, String winery, String location,
+      int count) async {
+    Map<String, dynamic> data = old.diff(name, winery, location, count);
     if (data.isEmpty) {
       return;
     }
@@ -301,6 +350,7 @@ class _AddBottleButtonState extends State<AddBottleButton> {
     TextEditingController _nameController = TextEditingController();
     TextEditingController _wineryController = TextEditingController();
     TextEditingController _locationController = TextEditingController();
+    TextEditingController _countController = TextEditingController();
 
     return showDialog(
         context: context,
@@ -308,7 +358,7 @@ class _AddBottleButtonState extends State<AddBottleButton> {
           return AlertDialog(
             title: Text("Add Your Wine"),
             content: BottleForm(_nameController, _wineryController,
-                _locationController, this._formKey),
+                _locationController, _countController, this._formKey),
             actions: <Widget>[
               MaterialButton(
                 elevation: 3.0,
@@ -316,9 +366,11 @@ class _AddBottleButtonState extends State<AddBottleButton> {
                 onPressed: () async {
                   if (_formKey.currentState.validate()) {
                     await widget._updateService.addBottle(
-                        _nameController.text.toString(),
-                        _wineryController.text.toString(),
-                        _locationController.text.toString());
+                      _nameController.text,
+                      _wineryController.text,
+                      _locationController.text,
+                      int.parse(_countController.text),
+                    );
                     Navigator.of(context).pop();
                   }
                 },
