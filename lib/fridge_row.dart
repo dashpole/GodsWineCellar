@@ -43,8 +43,9 @@ class FridgeRowList extends StatefulWidget {
   final List<DocumentSnapshot> _documents;
   final FridgeRowUpdateService _updateService;
   final String _userID;
+  final String _fridgeName;
 
-  FridgeRowList(this._documents, String userID, String fridgeID)
+  FridgeRowList(this._documents, String userID, this._fridgeName, String fridgeID)
       : _updateService = FridgeRowUpdateService(userID, fridgeID),
         _userID = userID;
 
@@ -63,11 +64,11 @@ class _FridgeRowListState extends State<FridgeRowList> {
         //or equal to zero and less than `itemCount`.
         itemBuilder: (context, index) {
           return _buildFridgeRowItem(
-              context, widget._documents[index], widget._updateService);
+              context, widget._documents[index], widget._fridgeName, widget._updateService);
         });
   }
 
-  Widget _buildFridgeRowItem(BuildContext context, DocumentSnapshot data,
+  Widget _buildFridgeRowItem(BuildContext context, DocumentSnapshot data, String fridgeName,
       FridgeRowUpdateService fridgeRowUpdateService) {
     final _fridgeRow = FridgeRow.fromSnapshot(data);
 
@@ -88,6 +89,7 @@ class _FridgeRowListState extends State<FridgeRowList> {
                 builder: (context) => RowBottleGroupListPage(
                   widget._userID,
                   _fridgeRow._uid.toString(),
+                  fridgeName,
                   _fridgeRow._number.toString(),
                 ),
               ),
@@ -102,8 +104,9 @@ class _FridgeRowListState extends State<FridgeRowList> {
 class FridgeRowListPage extends StatefulWidget {
   final String _userID;
   final String _fridgeID;
+  final String _fridgeName;
 
-  FridgeRowListPage(this._userID, this._fridgeID);
+  FridgeRowListPage(this._userID, this._fridgeID, this._fridgeName);
 
   @override
   _FridgeRowListPageState createState() => _FridgeRowListPageState();
@@ -114,7 +117,7 @@ class _FridgeRowListPageState extends State<FridgeRowListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('God\'s Wine Cellar'),
+        title: Text('Fridge: ${widget._fridgeName}'),
       ),
       body: StreamBuilder<QuerySnapshot>(
           stream: Firestore.instance
@@ -127,7 +130,7 @@ class _FridgeRowListPageState extends State<FridgeRowListPage> {
           builder: (context, snapshot) {
             if (!snapshot.hasData) return Container();
             return FridgeRowList(
-                snapshot.data.documents, widget._userID, widget._fridgeID);
+                snapshot.data.documents, widget._userID, widget._fridgeName, widget._fridgeID);
           }),
     );
   }

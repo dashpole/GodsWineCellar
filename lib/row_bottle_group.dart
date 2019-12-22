@@ -75,9 +75,10 @@ class _RowBottleGroupListState extends State<RowBottleGroupList> {
 class RowBottleGroupListPage extends StatefulWidget {
   final String _userID;
   final String _fridgeID;
+  final String _fridgeName;
   final String _rowNumber;
 
-  RowBottleGroupListPage(this._userID, this._fridgeID, this._rowNumber);
+  RowBottleGroupListPage(this._userID, this._fridgeID, this._fridgeName, this._rowNumber);
 
   @override
   _RowBottleGroupListPageState createState() => _RowBottleGroupListPageState();
@@ -88,7 +89,7 @@ class _RowBottleGroupListPageState extends State<RowBottleGroupListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('God\'s Wine Cellar'),
+        title: Text('Fridge: ${widget._fridgeName}, Row: ${widget._rowNumber}'),
       ),
       body: StreamBuilder<QuerySnapshot>(
           stream: Firestore.instance

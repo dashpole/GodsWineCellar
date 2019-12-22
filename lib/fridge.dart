@@ -231,7 +231,7 @@ class _FridgeListState extends State<FridgeList> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => FridgeRowListPage(
-                      widget._userID, _fridge._uid.toString()),
+                      widget._userID, _fridge._uid.toString(), _fridge._name),
                 ));
           },
         ),
