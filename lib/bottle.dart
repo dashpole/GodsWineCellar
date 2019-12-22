@@ -31,46 +31,35 @@ class _BottleListState extends State<BottleList> {
     final _wine = Bottle.fromSnapshot(data);
 
 // Build a list of bottle items
-    return Padding(
-      key: ValueKey(_wine._uid),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(5.0),
-        ),
-        child: ListTile(
-          title: Text(_wine._name),
-          subtitle: Text(_wine._winery),
-          trailing: PopupMenuButton(
-            icon: Icon(Icons.menu),
-            itemBuilder: (BuildContext context) {
-              return <PopupMenuItem>[
-                PopupMenuItem(
-                    value: "delete",
-                    child: ListTile(
-                      title: Text("Delete"),
-                      trailing: Icon(Icons.delete),
-                      onTap: () {
-                        Navigator.pop(context);
-                        bottleUpdateService.deleteBottle(_wine);
-                      },
-                    )),
-                PopupMenuItem(
-                  value: "edit",
-                  child: ListTile(
-                    title: Text("Edit"),
-                    trailing: Icon(Icons.edit),
-                    onTap: () {
-                      Navigator.pop(context);
-                      createEditWineDialog(context, _wine);
-                    },
-                  ),
-                ),
-              ];
-            },
-          ),
-        ),
+    return BottleListItem(
+      bottle: _wine,
+      trailing: PopupMenuButton(
+        icon: Icon(Icons.menu),
+        itemBuilder: (BuildContext context) {
+          return <PopupMenuItem>[
+            PopupMenuItem(
+                value: "delete",
+                child: ListTile(
+                  title: Text("Delete"),
+                  trailing: Icon(Icons.delete),
+                  onTap: () {
+                    Navigator.pop(context);
+                    bottleUpdateService.deleteBottle(_wine);
+                  },
+                )),
+            PopupMenuItem(
+              value: "edit",
+              child: ListTile(
+                title: Text("Edit"),
+                trailing: Icon(Icons.edit),
+                onTap: () {
+                  Navigator.pop(context);
+                  createEditWineDialog(context, _wine);
+                },
+              ),
+            ),
+          ];
+        },
       ),
     );
   }
@@ -110,6 +99,34 @@ class _BottleListState extends State<BottleList> {
           ],
         );
       },
+    );
+  }
+}
+
+class BottleListItem extends StatelessWidget {
+  final Bottle bottle;
+  final Widget trailing;
+
+  const BottleListItem({
+    this.trailing,
+    this.bottle,
+  }) : assert(bottle != null);
+
+  Widget build(BuildContext context) {
+    return Padding(
+      key: ValueKey(bottle._uid),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(5.0),
+        ),
+        child: ListTile(
+          title: Text(bottle._name),
+          subtitle: Text(bottle._winery),
+          trailing: trailing,
+        ),
+      ),
     );
   }
 }
@@ -202,6 +219,28 @@ class Bottle {
   final String _location;
   final String _uid;
 
+  String get uid {
+    return _uid;
+  }
+
+  Map<String, dynamic> get data {
+    return {'name': _name, 'winery': _winery, 'location': _location};
+  }
+
+  Map<String, dynamic> diff(String name, String winery, String location) {
+    Map<String, dynamic> data = {};
+    if (name != _name) {
+      data['name'] = name;
+    }
+    if (winery != _winery) {
+      data['winery'] = winery;
+    }
+    if (location != _location) {
+      data['location'] = location;
+    }
+    return data;
+  }
+
   Bottle.fromSnapshot(DocumentSnapshot snapshot)
       : assert(snapshot.data['name'] != null),
         assert(snapshot.data['winery'] != null),
@@ -236,16 +275,7 @@ class BottleUpdateService {
 
   Future updateBottle(
       Bottle old, String name, String winery, String location) async {
-    Map<String, dynamic> data = {};
-    if (name != old._name) {
-      data['name'] = name;
-    }
-    if (winery != old._winery) {
-      data['winery'] = winery;
-    }
-    if (location != old._location) {
-      data['location'] = location;
-    }
+    Map<String, dynamic> data = old.diff(name, winery, location);
     if (data.isEmpty) {
       return;
     }

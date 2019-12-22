@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'row_bottle_group.dart';
 
 class FridgeRow {
   final int _number;
@@ -41,9 +42,11 @@ class FridgeRowUpdateService {
 class FridgeRowList extends StatefulWidget {
   final List<DocumentSnapshot> _documents;
   final FridgeRowUpdateService _updateService;
+  final String _userID;
 
   FridgeRowList(this._documents, String userID, String fridgeID)
-      : _updateService = FridgeRowUpdateService(userID, fridgeID);
+      : _updateService = FridgeRowUpdateService(userID, fridgeID),
+        _userID = userID;
 
   @override
   _FridgeRowListState createState() => _FridgeRowListState();
@@ -78,6 +81,18 @@ class _FridgeRowListState extends State<FridgeRowList> {
         ),
         child: ListTile(
           title: Text("Fridge Row Number: ${_fridgeRow._number}"),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RowBottleGroupListPage(
+                  widget._userID,
+                  _fridgeRow._uid.toString(),
+                  _fridgeRow._number.toString(),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
