@@ -5,7 +5,7 @@ import 'bottle.dart';
 
 class RowBottleGroup {
   final Bottle _bottle;
-  final String _count;
+  final int _count;
 
   RowBottleGroup.fromSnapshot(DocumentSnapshot snapshot)
       : assert(snapshot.data['count'] != null),
@@ -67,7 +67,6 @@ class _RowBottleGroupListState extends State<RowBottleGroupList> {
   Widget _buildRowBottleGroupItem(BuildContext context, DocumentSnapshot data,
       RowBottleGroupUpdateService rowBottleGroupUpdateService) {
     final _rowBottleGroup = RowBottleGroup.fromSnapshot(data);
-
     return BottleListItem(bottle: _rowBottleGroup._bottle);
   }
 }
@@ -78,7 +77,8 @@ class RowBottleGroupListPage extends StatefulWidget {
   final String _fridgeName;
   final String _rowNumber;
 
-  RowBottleGroupListPage(this._userID, this._fridgeID, this._fridgeName, this._rowNumber);
+  RowBottleGroupListPage(
+      this._userID, this._fridgeID, this._fridgeName, this._rowNumber);
 
   @override
   _RowBottleGroupListPageState createState() => _RowBottleGroupListPageState();

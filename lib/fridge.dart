@@ -15,6 +15,14 @@ class Fridge {
 
   @override
   String toString() => "Fridge<$_name>";
+
+  String get uid {
+    return _uid;
+  }
+
+  String get name {
+    return _name;
+  }
 }
 
 class FridgeUpdateService {
@@ -230,8 +238,8 @@ class _FridgeListState extends State<FridgeList> {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => FridgeRowListPage(
-                      widget._userID, _fridge._uid.toString(), _fridge._name),
+                  builder: (context) =>
+                      FridgeRowListPage(widget._userID, _fridge),
                 ));
           },
         ),

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'row_bottle_group.dart';
+import 'fridge.dart';
 
 class FridgeRow {
   final int _number;
@@ -43,11 +44,10 @@ class FridgeRowList extends StatefulWidget {
   final List<DocumentSnapshot> _documents;
   final FridgeRowUpdateService _updateService;
   final String _userID;
-  final String _fridgeName;
+  final Fridge _fridge;
 
-  FridgeRowList(this._documents, String userID, this._fridgeName, String fridgeID)
-      : _updateService = FridgeRowUpdateService(userID, fridgeID),
-        _userID = userID;
+  FridgeRowList(this._documents, this._userID, this._fridge)
+      : _updateService = FridgeRowUpdateService(_userID, _fridge.uid);
 
   @override
   _FridgeRowListState createState() => _FridgeRowListState();
@@ -63,13 +63,13 @@ class _FridgeRowListState extends State<FridgeRowList> {
         //The `itemBuilder` callback will be called only with indices greater than
         //or equal to zero and less than `itemCount`.
         itemBuilder: (context, index) {
-          return _buildFridgeRowItem(
-              context, widget._documents[index], widget._fridgeName, widget._updateService);
+          return _buildFridgeRowItem(context, widget._documents[index],
+              widget._fridge, widget._updateService);
         });
   }
 
-  Widget _buildFridgeRowItem(BuildContext context, DocumentSnapshot data, String fridgeName,
-      FridgeRowUpdateService fridgeRowUpdateService) {
+  Widget _buildFridgeRowItem(BuildContext context, DocumentSnapshot data,
+      Fridge fridge, FridgeRowUpdateService fridgeRowUpdateService) {
     final _fridgeRow = FridgeRow.fromSnapshot(data);
 
     return Padding(
@@ -88,8 +88,8 @@ class _FridgeRowListState extends State<FridgeRowList> {
               MaterialPageRoute(
                 builder: (context) => RowBottleGroupListPage(
                   widget._userID,
-                  _fridgeRow._uid.toString(),
-                  fridgeName,
+                  fridge.uid,
+                  fridge.name,
                   _fridgeRow._number.toString(),
                 ),
               ),
@@ -103,10 +103,9 @@ class _FridgeRowListState extends State<FridgeRowList> {
 
 class FridgeRowListPage extends StatefulWidget {
   final String _userID;
-  final String _fridgeID;
-  final String _fridgeName;
+  final Fridge _fridge;
 
-  FridgeRowListPage(this._userID, this._fridgeID, this._fridgeName);
+  FridgeRowListPage(this._userID, this._fridge);
 
   @override
   _FridgeRowListPageState createState() => _FridgeRowListPageState();
@@ -117,20 +116,20 @@ class _FridgeRowListPageState extends State<FridgeRowListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Fridge: ${widget._fridgeName}'),
+        title: Text('Fridge: ${widget._fridge.name}'),
       ),
       body: StreamBuilder<QuerySnapshot>(
           stream: Firestore.instance
               .collection("users")
               .document(widget._userID)
               .collection("fridges")
-              .document(widget._fridgeID)
+              .document(widget._fridge.uid)
               .collection("rows")
               .snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return Container();
             return FridgeRowList(
-                snapshot.data.documents, widget._userID, widget._fridgeName, widget._fridgeID);
+                snapshot.data.documents, widget._userID, widget._fridge);
           }),
     );
   }
