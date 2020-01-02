@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -51,15 +53,19 @@ class Bottle {
   String get uid {
     return _uid;
   }
+
   String get name {
     return _name;
   }
+
   String get winery {
     return _winery;
   }
+
   String get location {
     return _location;
   }
+
   int get count {
     return _count;
   }
@@ -73,8 +79,7 @@ class Bottle {
     };
   }
 
-  Map<String, dynamic> diff(
-      String name, String winery, String location, int count) {
+  Map<String, dynamic> diff(String name, String winery, String location, int count) {
     Map<String, dynamic> data = {};
     if (name != _name) {
       data['name'] = name;
@@ -107,30 +112,57 @@ class Bottle {
 }
 
 class BottleUpdateService {
-  final CollectionReference _collection;
+  final CollectionReference _winesCollection, _fridgesCollection;
 
   BottleUpdateService(String userID)
-      : _collection = Firestore.instance
+      : _winesCollection = Firestore.instance
+      .collection("users")
+      .document(userID)
+      .collection("wines"),
+        _fridgesCollection = Firestore.instance
             .collection("users")
             .document(userID)
-            .collection("wines");
+            .collection("fridges");
 
-  Future addBottle(
-      String name, String winery, String location, int count) async {
-    return await _collection.document().setData(
+  Future addBottle(String name, String winery, String location, int count) async {
+    // TODO: Check to see if a bottle with that name + winery already exists before we add it
+    return await _winesCollection.document().setData(
         {'name': name, 'winery': winery, 'location': location, 'count': count});
   }
 
   Future deleteBottle(Bottle bottle) async {
-    return await _collection.document(bottle._uid).delete();
+    // TODO: Delete all instances in fridges
+    return await _winesCollection.document(bottle._uid).delete();
   }
 
-  Future updateBottle(Bottle old, String name, String winery, String location,
-      int count) async {
+  Future updateBottle(Bottle old, String name, String winery,
+      String location, int count) async {
     Map<String, dynamic> data = old.diff(name, winery, location, count);
     if (data.isEmpty) {
       return;
     }
-    return await _collection.document(old._uid).updateData(data);
+
+    // Update all of the bottles in fridges
+    // TODO: Don't update count in fridges!
+    var batch = Firestore.instance.batch();
+    QuerySnapshot fridges = await _fridgesCollection.getDocuments();
+    print(fridges.documents.toString());
+    await Future.forEach(fridges.documents, (DocumentSnapshot fridge) async {
+      QuerySnapshot rows =
+      await fridge.reference.collection("rows").getDocuments();
+      await Future.forEach(rows.documents, (DocumentSnapshot row) async {
+        QuerySnapshot bottles =
+        await row.reference.collection("bottlegroups").getDocuments();
+        List<DocumentSnapshot> documents = bottles.documents;
+        documents.retainWhere((rowBottle) => rowBottle.documentID == old.uid);
+        await Future.forEach(documents, (DocumentSnapshot document) {
+          batch.updateData(document.reference, data);
+        });
+      });
+    });
+
+    // Update the main wine list.
+    batch.updateData(_winesCollection.document(old._uid), data);
+    return await batch.commit();
   }
 }
