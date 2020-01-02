@@ -1,9 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gods_wine_locator/bottle.dart';
 import 'auth.dart';
-import 'bottle.dart';
+import 'wine_list.dart';
 import 'fridge.dart';
 
 void main() => runApp(MyApp());
