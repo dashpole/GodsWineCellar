@@ -79,7 +79,8 @@ class Bottle {
     };
   }
 
-  Map<String, dynamic> diff(String name, String winery, String location, int count) {
+  Map<String, dynamic> diff(String name, String winery, String location,
+      int count) {
     Map<String, dynamic> data = {};
     if (name != _name) {
       data['name'] = name;
@@ -124,8 +125,17 @@ class BottleUpdateService {
             .document(userID)
             .collection("fridges");
 
-  Future addBottle(String name, String winery, String location, int count) async {
-    // TODO: Check to see if a bottle with that name + winery already exists before we add it
+  Future<void> addBottle(String name, String winery, String location,
+      int count) async {
+    QuerySnapshot matchesQuery = await _winesCollection
+        .where('name', isEqualTo: name)
+        .where('winery', isEqualTo: winery)
+        .getDocuments();
+    bool alreadyExists = matchesQuery.documents.length > 0;
+    if (alreadyExists) {
+      // TODO: Make a popup to notify the user that creation failed because the wine already exists
+      return "Wine already exists";
+    }
     return await _winesCollection.document().setData(
         {'name': name, 'winery': winery, 'location': location, 'count': count});
   }
@@ -135,8 +145,8 @@ class BottleUpdateService {
     return await _winesCollection.document(bottle._uid).delete();
   }
 
-  Future updateBottle(Bottle old, String name, String winery,
-      String location, int count) async {
+  Future updateBottle(Bottle old, String name, String winery, String location,
+      int count) async {
     Map<String, dynamic> data = old.diff(name, winery, location, count);
     if (data.isEmpty) {
       return;
@@ -146,7 +156,6 @@ class BottleUpdateService {
     // TODO: Don't update count in fridges!
     var batch = Firestore.instance.batch();
     QuerySnapshot fridges = await _fridgesCollection.getDocuments();
-    print(fridges.documents.toString());
     await Future.forEach(fridges.documents, (DocumentSnapshot fridge) async {
       QuerySnapshot rows =
       await fridge.reference.collection("rows").getDocuments();
