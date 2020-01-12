@@ -81,6 +81,14 @@ class Bottle {
 
   Map<String, dynamic> diff(
       String name, String winery, String location, int count) {
+    Map<String, dynamic> data = diffInfo(name, winery, location);
+    if (count != _count) {
+      data['count'] = count;
+    }
+    return data;
+  }
+
+  Map<String, dynamic> diffInfo(String name, String winery, String location) {
     Map<String, dynamic> data = {};
     if (name != _name) {
       data['name'] = name;
@@ -90,9 +98,6 @@ class Bottle {
     }
     if (location != _location) {
       data['location'] = location;
-    }
-    if (count != _count) {
-      data['count'] = count;
     }
     return data;
   }
@@ -140,19 +145,6 @@ class BottleUpdateService {
   }
 
   Future deleteBottle(Bottle bottle) async {
-    // TODO: Delete all instances in fridges
-    return await _winesCollection.document(bottle._uid).delete();
-  }
-
-  Future updateBottle(Bottle old, String name, String winery, String location,
-      int count) async {
-    Map<String, dynamic> data = old.diff(name, winery, location, count);
-    if (data.isEmpty) {
-      return;
-    }
-
-    // Update all of the bottles in fridges
-    // TODO: Don't update count in fridges!
     var batch = Firestore.instance.batch();
     QuerySnapshot fridges = await _fridgesCollection.getDocuments();
     await Future.forEach(fridges.documents, (DocumentSnapshot fridge) async {
@@ -162,15 +154,47 @@ class BottleUpdateService {
         QuerySnapshot bottles =
             await row.reference.collection("bottlegroups").getDocuments();
         List<DocumentSnapshot> documents = bottles.documents;
-        documents.retainWhere((rowBottle) => rowBottle.documentID == old.uid);
+        documents
+            .retainWhere((rowBottle) => rowBottle.documentID == bottle.uid);
         await Future.forEach(documents, (DocumentSnapshot document) {
-          batch.updateData(document.reference, data);
+          batch.delete(document.reference);
         });
       });
     });
+    batch.delete(_winesCollection.document(bottle._uid));
+    return await batch.commit();
+  }
 
-    // Update the main wine list.
+  Future updateBottleInfo(Bottle old, String name, String winery,
+      String location, int count) async {
+    Map<String, dynamic> data = old.diff(name, winery, location, count);
+    if (data.isEmpty) {
+      return;
+    }
+    var batch = Firestore.instance.batch();
+
+    // Update the main wine list with all modified information, including count.
     batch.updateData(_winesCollection.document(old._uid), data);
+
+    // Update all of the bottles in fridges, but do not update the count in
+    // fridge rows.
+    Map<String, dynamic> infoData = old.diffInfo(name, winery, location);
+    if (infoData.isNotEmpty) {
+      QuerySnapshot fridges = await _fridgesCollection.getDocuments();
+      await Future.forEach(fridges.documents, (DocumentSnapshot fridge) async {
+        QuerySnapshot rows =
+            await fridge.reference.collection("rows").getDocuments();
+        await Future.forEach(rows.documents, (DocumentSnapshot row) async {
+          QuerySnapshot bottles =
+              await row.reference.collection("bottlegroups").getDocuments();
+          List<DocumentSnapshot> documents = bottles.documents;
+          documents.retainWhere((rowBottle) => rowBottle.documentID == old.uid);
+          await Future.forEach(documents, (DocumentSnapshot document) {
+            batch.updateData(document.reference, infoData);
+          });
+        });
+      });
+    }
     return await batch.commit();
   }
 }

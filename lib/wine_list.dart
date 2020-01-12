@@ -90,7 +90,7 @@ class _BottleListState extends State<BottleList> {
               child: Text('Submit'),
               onPressed: () async {
                 if (_formKey.currentState.validate()) {
-                  await widget._updateService.updateBottle(
+                  await widget._updateService.updateBottleInfo(
                     bottle,
                     _nameController.text,
                     _wineryController.text,
