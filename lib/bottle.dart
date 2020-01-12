@@ -79,8 +79,8 @@ class Bottle {
     };
   }
 
-  Map<String, dynamic> diff(String name, String winery, String location,
-      int count) {
+  Map<String, dynamic> diff(
+      String name, String winery, String location, int count) {
     Map<String, dynamic> data = {};
     if (name != _name) {
       data['name'] = name;
@@ -117,24 +117,23 @@ class BottleUpdateService {
 
   BottleUpdateService(String userID)
       : _winesCollection = Firestore.instance
-      .collection("users")
-      .document(userID)
-      .collection("wines"),
+            .collection("users")
+            .document(userID)
+            .collection("wines"),
         _fridgesCollection = Firestore.instance
             .collection("users")
             .document(userID)
             .collection("fridges");
 
-  Future<void> addBottle(String name, String winery, String location,
-      int count) async {
+  Future<void> addBottle(
+      String name, String winery, String location, int count) async {
     QuerySnapshot matchesQuery = await _winesCollection
         .where('name', isEqualTo: name)
         .where('winery', isEqualTo: winery)
         .getDocuments();
     bool alreadyExists = matchesQuery.documents.length > 0;
     if (alreadyExists) {
-      // TODO: Make a popup to notify the user that creation failed because the wine already exists
-      return "Wine already exists";
+      throw ("Wine already exists");
     }
     return await _winesCollection.document().setData(
         {'name': name, 'winery': winery, 'location': location, 'count': count});
@@ -158,10 +157,10 @@ class BottleUpdateService {
     QuerySnapshot fridges = await _fridgesCollection.getDocuments();
     await Future.forEach(fridges.documents, (DocumentSnapshot fridge) async {
       QuerySnapshot rows =
-      await fridge.reference.collection("rows").getDocuments();
+          await fridge.reference.collection("rows").getDocuments();
       await Future.forEach(rows.documents, (DocumentSnapshot row) async {
         QuerySnapshot bottles =
-        await row.reference.collection("bottlegroups").getDocuments();
+            await row.reference.collection("bottlegroups").getDocuments();
         List<DocumentSnapshot> documents = bottles.documents;
         documents.retainWhere((rowBottle) => rowBottle.documentID == old.uid);
         await Future.forEach(documents, (DocumentSnapshot document) {

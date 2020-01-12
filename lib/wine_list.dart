@@ -212,61 +212,58 @@ class BottleFormState extends State<BottleForm> {
   }
 }
 
-class AddBottleButton extends StatefulWidget {
+class AddBottleDialog extends StatefulWidget {
   final BottleUpdateService _updateService;
 
-  AddBottleButton(String userID) : _updateService = BottleUpdateService(userID);
+  AddBottleDialog(String userID) : _updateService = BottleUpdateService(userID);
 
   @override
-  _AddBottleButtonState createState() => _AddBottleButtonState();
+  _AddBottleDialogState createState() => _AddBottleDialogState();
 }
 
-// Given a State of type AddBottleButton, define how it is displayed on the
-// screen through the build function
-class _AddBottleButtonState extends State<AddBottleButton> {
+class _AddBottleDialogState extends State<AddBottleDialog> {
+  TextEditingController _nameController = TextEditingController();
+  TextEditingController _wineryController = TextEditingController();
+  TextEditingController _locationController = TextEditingController();
+  TextEditingController _countController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-
-  createAddWineDialog(BuildContext context) {
-    TextEditingController _nameController = TextEditingController();
-    TextEditingController _wineryController = TextEditingController();
-    TextEditingController _locationController = TextEditingController();
-    TextEditingController _countController = TextEditingController();
-
-    return showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("Add Your Wine"),
-            content: BottleForm(_nameController, _wineryController,
-                _locationController, _countController, this._formKey),
-            actions: <Widget>[
-              MaterialButton(
-                elevation: 3.0,
-                child: Text('Submit'),
-                onPressed: () async {
-                  if (_formKey.currentState.validate()) {
-                    await widget._updateService.addBottle(
-                      _nameController.text,
-                      _wineryController.text,
-                      _locationController.text,
-                      int.parse(_countController.text),
-                    );
-                    Navigator.of(context).pop();
-                  }
-                },
-              )
-            ],
-          );
-        });
-  }
+  String _submitErr = "";
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton(
-      child: Icon(Icons.add),
-      onPressed: () {
-        createAddWineDialog(context);
-      },
+    return AlertDialog(
+      title: Text("Add Your Wine"),
+      content: BottleForm(_nameController, _wineryController,
+          _locationController, _countController, this._formKey),
+      actions: <Widget>[
+        _submitErr.length == 0
+            ? Container()
+            : Text(
+                _submitErr,
+                style: TextStyle(color: Colors.red),
+              ),
+        MaterialButton(
+          elevation: 3.0,
+          child: Text('Submit'),
+          onPressed: () async {
+            if (_formKey.currentState.validate()) {
+              try {
+                await widget._updateService.addBottle(
+                  _nameController.text,
+                  _wineryController.text,
+                  _locationController.text,
+                  int.parse(_countController.text),
+                );
+                Navigator.of(context).pop();
+              } catch (e) {
+                setState(() {
+                  _submitErr = e.toString();
+                });
+              }
+            }
+          },
+        )
+      ],
     );
   }
 }

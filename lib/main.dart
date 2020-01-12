@@ -91,7 +91,16 @@ class _MainBodyState extends State<MainBody> {
         BottleBody(widget._user),
         FridgeBody(widget._user),
       ][_selectedIndex],
-      floatingActionButton: AddBottleButton(widget._user.data.uid),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () {
+          showDialog(
+              context: context,
+              builder: (context) {
+                return AddBottleDialog(widget._user.data.uid);
+              });
+        },
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
