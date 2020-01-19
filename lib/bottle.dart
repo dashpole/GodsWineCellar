@@ -182,11 +182,45 @@ class BottleUpdateService {
     return await batch.commit();
   }
 
+  // TODO test this...
+  Future moveToFridge(
+      Bottle unallocatedBottle, String fridge, String row, int count) async {
+    var batch = Firestore.instance.batch();
+    if (count > unallocatedBottle.count) {
+      // TODO Can there be a race condition here?
+      throw ("Can't move $count bottles, since you only have ${unallocatedBottle.count} unallocated");
+    }
+
+    // Add the bottles to the rowBottleGroup
+    DocumentReference rowBottleGroupReference = _fridgesCollection
+        .document(fridge)
+        .collection("rows")
+        .document(row)
+        .collection("bottlegroups")
+        .document(unallocatedBottle.uid);
+    DocumentSnapshot rowBottleGroupDocument =
+        await rowBottleGroupReference.get();
+    // TODO What happens here if the rowBottleGroup doesn't have the document yet?
+    Bottle rowBottleGroup = Bottle.fromSnapshot(rowBottleGroupDocument);
+    Map<String, dynamic> rbgData = {
+      'count': rowBottleGroup.count + count,
+    };
+    batch.updateData(rowBottleGroupReference, rbgData);
+
+    // Remove the bottles from the unallocated list
+    Map<String, dynamic> unallocatedData = {
+      'count': unallocatedBottle.count - count,
+    };
+    batch.updateData(_unallocatedCollection.document(unallocatedBottle.uid),
+        unallocatedData);
+    return await batch.commit();
+  }
+
   Future updateBottleInfo(Bottle wineListBottle, String newName,
       String newWinery, String newLocation, int newCount) async {
     var batch = Firestore.instance.batch();
     if (newCount < 0) {
-      throw("You must set a positive number of bottles.");
+      throw ("You must set a positive number of bottles.");
     }
 
     // Update the main wine list with all modified information, including count.
@@ -205,6 +239,8 @@ class BottleUpdateService {
     Bottle unallocatedBottle = Bottle.fromSnapshot(unallocatedDocument);
     int newUnallocatedCount = unallocatedBottle.count + deltaCount;
     if (newUnallocatedCount < 0) {
+      // TODO should this check happen in a transaction instead of a batch?
+      // In theory, there is a race condition here...
       throw ("Not enough unallocated wine to decrease bottles by ${-deltaCount}");
     }
     Map<String, dynamic> unallocatedDiff = unallocatedBottle.diff(
