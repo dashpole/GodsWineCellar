@@ -56,7 +56,12 @@ class _BottleListState extends State<BottleList> {
                 trailing: Icon(Icons.edit),
                 onTap: () {
                   Navigator.pop(context);
-                  createEditWineDialog(context, _wine);
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return EditBottleDialog(bottleUpdateService, _wine);
+                    },
+                  );
                 },
               ),
             ),
@@ -65,45 +70,79 @@ class _BottleListState extends State<BottleList> {
       ),
     );
   }
+}
 
-  createEditWineDialog(BuildContext context, Bottle bottle) {
-    TextEditingController _nameController =
-        TextEditingController(text: bottle.name);
-    TextEditingController _wineryController =
-        TextEditingController(text: bottle.winery);
-    TextEditingController _locationController =
-        TextEditingController(text: bottle.location);
-    TextEditingController _countController =
-        TextEditingController(text: bottle.count.toString());
-    GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class EditBottleDialog extends StatefulWidget {
+  final Bottle _bottle;
+  final BottleUpdateService _updateService;
+  final TextEditingController _nameController;
+  final TextEditingController _wineryController;
+  final TextEditingController _locationController;
+  final TextEditingController _countController;
 
-    return showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Edit Your Wine"),
-          content: BottleForm(_nameController, _wineryController,
-              _locationController, _countController, _formKey),
-          actions: <Widget>[
-            MaterialButton(
-              elevation: 5.0,
-              child: Text('Submit'),
-              onPressed: () async {
-                if (_formKey.currentState.validate()) {
-                  await widget._updateService.updateBottleInfo(
-                    bottle,
-                    _nameController.text,
-                    _wineryController.text,
-                    _locationController.text,
-                    int.parse(_countController.text),
-                  );
-                  Navigator.pop(context);
-                }
-              },
-            )
-          ],
-        );
-      },
+  EditBottleDialog(this._updateService, this._bottle)
+      : _nameController = TextEditingController(text: _bottle.name),
+        _wineryController = TextEditingController(text: _bottle.winery),
+        _locationController = TextEditingController(text: _bottle.location),
+        _countController =
+            TextEditingController(text: _bottle.count.toString());
+
+  @override
+  _EditBottleDialogState createState() => _EditBottleDialogState();
+}
+
+class _EditBottleDialogState extends State<EditBottleDialog> {
+  final _formKey = GlobalKey<FormState>();
+  String _submitErr = "";
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Edit Your Wine"),
+      content: BottleForm(widget._nameController, widget._wineryController,
+          widget._locationController, widget._countController, _formKey),
+      actions: <Widget>[
+        _submitErr.length == 0
+            ? Container()
+            : Container(
+                height: 100,
+                width: 240,
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  children: <Widget>[
+                    Container(width: 16),
+                    Flexible(
+                      child: Text(
+                        _submitErr,
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        MaterialButton(
+          elevation: 5.0,
+          child: Text('Submit'),
+          onPressed: () async {
+            if (_formKey.currentState.validate()) {
+              try {
+                await widget._updateService.updateBottleInfo(
+                  widget._bottle,
+                  widget._nameController.text,
+                  widget._wineryController.text,
+                  widget._locationController.text,
+                  int.parse(widget._countController.text),
+                );
+                Navigator.of(context).pop();
+              } catch (e) {
+                setState(() {
+                  _submitErr = e.toString();
+                });
+              }
+            }
+          },
+        )
+      ],
     );
   }
 }
@@ -238,9 +277,21 @@ class _AddBottleDialogState extends State<AddBottleDialog> {
       actions: <Widget>[
         _submitErr.length == 0
             ? Container()
-            : Text(
-                _submitErr,
-                style: TextStyle(color: Colors.red),
+            : Container(
+                height: 100,
+                width: 240,
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  children: <Widget>[
+                    Container(width: 16),
+                    Flexible(
+                      child: Text(
+                        _submitErr,
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
               ),
         MaterialButton(
           elevation: 3.0,

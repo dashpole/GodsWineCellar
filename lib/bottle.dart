@@ -118,7 +118,9 @@ class Bottle {
 }
 
 class BottleUpdateService {
-  final CollectionReference _winesCollection, _fridgesCollection;
+  final CollectionReference _winesCollection,
+      _fridgesCollection,
+      _unallocatedCollection;
 
   BottleUpdateService(String userID)
       : _winesCollection = Firestore.instance
@@ -128,7 +130,11 @@ class BottleUpdateService {
         _fridgesCollection = Firestore.instance
             .collection("users")
             .document(userID)
-            .collection("fridges");
+            .collection("fridges"),
+        _unallocatedCollection = Firestore.instance
+            .collection("users")
+            .document(userID)
+            .collection("unallocated");
 
   Future<void> addBottle(
       String name, String winery, String location, int count) async {
@@ -140,8 +146,18 @@ class BottleUpdateService {
     if (alreadyExists) {
       throw ("Wine already exists");
     }
-    return await _winesCollection.document().setData(
-        {'name': name, 'winery': winery, 'location': location, 'count': count});
+
+    Map<String, dynamic> data = {
+      'name': name,
+      'winery': winery,
+      'location': location,
+      'count': count
+    };
+    final String newId = _winesCollection.document().documentID;
+    var batch = Firestore.instance.batch();
+    batch.setData(_unallocatedCollection.document(newId), data);
+    batch.setData(_winesCollection.document(newId), data);
+    return await batch.commit();
   }
 
   Future deleteBottle(Bottle bottle) async {
@@ -162,23 +178,44 @@ class BottleUpdateService {
       });
     });
     batch.delete(_winesCollection.document(bottle._uid));
+    batch.delete(_unallocatedCollection.document(bottle._uid));
     return await batch.commit();
   }
 
-  Future updateBottleInfo(Bottle old, String name, String winery,
-      String location, int count) async {
-    Map<String, dynamic> data = old.diff(name, winery, location, count);
-    if (data.isEmpty) {
-      return;
-    }
+  Future updateBottleInfo(Bottle wineListBottle, String newName,
+      String newWinery, String newLocation, int newCount) async {
     var batch = Firestore.instance.batch();
+    if (newCount < 0) {
+      throw("You must set a positive number of bottles.");
+    }
 
     // Update the main wine list with all modified information, including count.
-    batch.updateData(_winesCollection.document(old._uid), data);
+    Map<String, dynamic> wineListDiff =
+        wineListBottle.diff(newName, newWinery, newLocation, newCount);
+    if (wineListDiff.isEmpty) {
+      return;
+    }
+    batch.updateData(
+        _winesCollection.document(wineListBottle._uid), wineListDiff);
+
+    // Check to make sure unallocated isn't negative after the change
+    int deltaCount = newCount - wineListBottle.count;
+    DocumentSnapshot unallocatedDocument =
+        await _unallocatedCollection.document(wineListBottle._uid).get();
+    Bottle unallocatedBottle = Bottle.fromSnapshot(unallocatedDocument);
+    int newUnallocatedCount = unallocatedBottle.count + deltaCount;
+    if (newUnallocatedCount < 0) {
+      throw ("Not enough unallocated wine to decrease bottles by ${-deltaCount}");
+    }
+    Map<String, dynamic> unallocatedDiff = unallocatedBottle.diff(
+        newName, newWinery, newLocation, newUnallocatedCount);
+    batch.updateData(
+        _unallocatedCollection.document(wineListBottle._uid), unallocatedDiff);
 
     // Update all of the bottles in fridges, but do not update the count in
     // fridge rows.
-    Map<String, dynamic> infoData = old.diffInfo(name, winery, location);
+    Map<String, dynamic> infoData =
+        wineListBottle.diffInfo(newName, newWinery, newLocation);
     if (infoData.isNotEmpty) {
       QuerySnapshot fridges = await _fridgesCollection.getDocuments();
       await Future.forEach(fridges.documents, (DocumentSnapshot fridge) async {
@@ -188,7 +225,8 @@ class BottleUpdateService {
           QuerySnapshot bottles =
               await row.reference.collection("bottlegroups").getDocuments();
           List<DocumentSnapshot> documents = bottles.documents;
-          documents.retainWhere((rowBottle) => rowBottle.documentID == old.uid);
+          documents.retainWhere(
+              (rowBottle) => rowBottle.documentID == wineListBottle.uid);
           await Future.forEach(documents, (DocumentSnapshot document) {
             batch.updateData(document.reference, infoData);
           });
