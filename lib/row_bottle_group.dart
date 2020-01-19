@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'fridge.dart';
+import 'fridge_row.dart';
 import 'bottle.dart';
 
 class RowBottleGroupList extends StatefulWidget {
@@ -22,45 +24,43 @@ class _RowBottleGroupListState extends State<RowBottleGroupList> {
         //The `itemBuilder` callback will be called only with indices greater than
         //or equal to zero and less than `itemCount`.
         itemBuilder: (context, index) {
-          return BottleListItem(bottle: Bottle.fromSnapshot(widget._documents[index]));
+          return BottleListItem(
+              bottle: Bottle.fromSnapshot(widget._documents[index]));
         });
   }
 }
 
-class RowBottleGroupListPage extends StatefulWidget {
+class RowBottleGroupListView extends StatefulWidget {
   final String _userID;
-  final String _fridgeID;
-  final String _fridgeName;
-  final String _rowNumber;
+  final Fridge _fridge;
+  final FridgeRow _row;
 
-  RowBottleGroupListPage(
-      this._userID, this._fridgeID, this._fridgeName, this._rowNumber);
+  // TODO implement back button
+  final Function _back;
+
+  RowBottleGroupListView(this._userID, this._fridge, this._row, this._back);
 
   @override
-  _RowBottleGroupListPageState createState() => _RowBottleGroupListPageState();
+  _RowBottleGroupListViewState createState() => _RowBottleGroupListViewState();
 }
 
-class _RowBottleGroupListPageState extends State<RowBottleGroupListPage> {
+class _RowBottleGroupListViewState extends State<RowBottleGroupListView> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Fridge: ${widget._fridgeName}, Row: ${widget._rowNumber}'),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-          stream: Firestore.instance
-              .collection("users")
-              .document(widget._userID)
-              .collection("fridges")
-              .document(widget._fridgeID)
-              .collection("rows")
-              .document(widget._rowNumber)
-              .collection("bottlegroups")
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return Container();
-            return RowBottleGroupList(snapshot.data.documents);
-          }),
+    return StreamBuilder<QuerySnapshot>(
+      stream: Firestore.instance
+          .collection("users")
+          .document(widget._userID)
+          .collection("fridges")
+          .document(widget._fridge.uid)
+          .collection("rows")
+          .document(widget._row.number.toString())
+          .collection("bottlegroups")
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return Container();
+        return RowBottleGroupList(snapshot.data.documents);
+      },
     );
   }
 }

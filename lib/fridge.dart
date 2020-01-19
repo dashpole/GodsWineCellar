@@ -145,8 +145,9 @@ class FridgeList extends StatefulWidget {
   final List<DocumentSnapshot> _documents;
   final FridgeUpdateService _updateService;
   final String _userID;
+  final Function _goToFridge;
 
-  FridgeList(this._documents, String userID)
+  FridgeList(this._documents, String userID, this._goToFridge)
       : _updateService = FridgeUpdateService(userID),
         _userID = userID;
 
@@ -188,62 +189,47 @@ class _FridgeListState extends State<FridgeList> {
             ),
           );
         }
-        return _buildFridgeItem(
-            context, widget._documents[index], widget._updateService);
+        Fridge _fridge = Fridge.fromSnapshot(widget._documents[index]);
+        return Padding(
+          key: ValueKey(_fridge._uid),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(5.0),
+            ),
+            child: ListTile(
+              title: Text(_fridge._name),
+              onLongPress: () => showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text("Confirm Delete Fridge"),
+                      content:
+                          Text("Are you sure you want to delete your fridge? \n"
+                              "This will delete all wines in your fridge."),
+                      actions: <Widget>[
+                        FlatButton(
+                          child: Text('Yes'),
+                          textColor: Colors.red,
+                          onPressed: () async {
+                            await widget._updateService.deleteFridge(_fridge);
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        FlatButton(
+                          child: Text('Cancel'),
+                          textColor: Colors.grey,
+                          onPressed: () => Navigator.of(context).pop(),
+                        )
+                      ],
+                    );
+                  }),
+              onTap: () => (widget._goToFridge(_fridge)),
+            ),
+          ),
+        );
       },
-    );
-  }
-
-  Widget _buildFridgeItem(BuildContext context, DocumentSnapshot data,
-      FridgeUpdateService fridgeUpdateService) {
-    final _fridge = Fridge.fromSnapshot(data);
-
-// Build a list of bottle items
-    return Padding(
-      key: ValueKey(_fridge._uid),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(5.0),
-        ),
-        child: ListTile(
-          title: Text(_fridge._name),
-          onLongPress: () => showDialog(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  title: Text("Confirm Delete Fridge"),
-                  content:
-                      Text("Are you sure you want to delete your fridge? \n"
-                          "This will delete all wines in your fridge."),
-                  actions: <Widget>[
-                    FlatButton(
-                      child: Text('Yes'),
-                      textColor: Colors.red,
-                      onPressed: () async {
-                        await fridgeUpdateService.deleteFridge(_fridge);
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                    FlatButton(
-                      child: Text('Cancel'),
-                      textColor: Colors.grey,
-                      onPressed: () => Navigator.of(context).pop(),
-                    )
-                  ],
-                );
-              }),
-          onTap: () {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      FridgeRowListPage(widget._userID, _fridge),
-                ));
-          },
-        ),
-      ),
     );
   }
 
@@ -276,6 +262,34 @@ class _FridgeListState extends State<FridgeList> {
             )
           ],
         );
+      },
+    );
+  }
+}
+
+class FridgeListView extends StatefulWidget {
+  final String _userID;
+  final Function _goToFridge;
+
+  FridgeListView(this._userID, this._goToFridge);
+
+  @override
+  _FridgeListViewState createState() => _FridgeListViewState();
+}
+
+class _FridgeListViewState extends State<FridgeListView> {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: Firestore.instance
+          .collection("users")
+          .document(widget._userID)
+          .collection("fridges")
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return Container();
+        return FridgeList(
+            snapshot.data.documents, widget._userID, widget._goToFridge);
       },
     );
   }

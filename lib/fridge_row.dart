@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'row_bottle_group.dart';
 import 'fridge.dart';
 
 class FridgeRow {
@@ -16,6 +15,10 @@ class FridgeRow {
         _number = snapshot.data['number'],
         _capacity = snapshot.data['capacity'],
         _uid = snapshot.documentID;
+
+  int get number {
+    return _number;
+  }
 
   @override
   String toString() => "FridgeRow<$_number:$_capacity>";
@@ -44,8 +47,9 @@ class FridgeRowList extends StatefulWidget {
   final FridgeRowUpdateService _updateService;
   final String _userID;
   final Fridge _fridge;
+  final Function _goToRow;
 
-  FridgeRowList(this._documents, this._userID, this._fridge)
+  FridgeRowList(this._documents, this._userID, this._fridge, this._goToRow)
       : _updateService = FridgeRowUpdateService(_userID, _fridge.uid);
 
   @override
@@ -81,55 +85,43 @@ class _FridgeRowListState extends State<FridgeRowList> {
         ),
         child: ListTile(
           title: Text("Fridge Row Number: ${_fridgeRow._number}"),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RowBottleGroupListPage(
-                  widget._userID,
-                  fridge.uid,
-                  fridge.name,
-                  _fridgeRow._number.toString(),
-                ),
-              ),
-            );
-          },
+          onTap: () => (widget._goToRow(widget._fridge, _fridgeRow)),
         ),
       ),
     );
   }
 }
 
-class FridgeRowListPage extends StatefulWidget {
+class FridgeRowListView extends StatefulWidget {
   final String _userID;
   final Fridge _fridge;
+  final Function _goToRow;
 
-  FridgeRowListPage(this._userID, this._fridge);
+  // TODO implement back button
+  final Function _back;
+
+  FridgeRowListView(this._userID, this._fridge, this._back, this._goToRow);
 
   @override
-  _FridgeRowListPageState createState() => _FridgeRowListPageState();
+  _FridgeRowListViewState createState() => _FridgeRowListViewState();
 }
 
-class _FridgeRowListPageState extends State<FridgeRowListPage> {
+class _FridgeRowListViewState extends State<FridgeRowListView> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Fridge: ${widget._fridge.name}'),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-          stream: Firestore.instance
-              .collection("users")
-              .document(widget._userID)
-              .collection("fridges")
-              .document(widget._fridge.uid)
-              .collection("rows")
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return Container();
-            return FridgeRowList(
-                snapshot.data.documents, widget._userID, widget._fridge);
-          }),
+    return StreamBuilder<QuerySnapshot>(
+      stream: Firestore.instance
+          .collection("users")
+          .document(widget._userID)
+          .collection("fridges")
+          .document(widget._fridge.uid)
+          .collection("rows")
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return Container();
+        return FridgeRowList(snapshot.data.documents, widget._userID,
+            widget._fridge, widget._goToRow);
+      },
     );
   }
 }
