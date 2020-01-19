@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'auth.dart';
+import 'unallocated_list.dart';
 import 'wine_list.dart';
 import 'fridge.dart';
 
@@ -161,16 +162,29 @@ class FridgeBody extends StatefulWidget {
 class _FridgeBodyState extends State<FridgeBody> {
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: Firestore.instance
-          .collection("users")
-          .document(widget._user.data.uid)
-          .collection("fridges")
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return Container();
-        return FridgeList(snapshot.data.documents, widget._user.data.uid);
-      },
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: Firestore.instance
+                .collection("users")
+                .document(widget._user.data.uid)
+                .collection("fridges")
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return Container();
+              return FridgeList(snapshot.data.documents, widget._user.data.uid);
+            },
+          ),
+        ),
+        ExpansionTile(
+          title: Text("Unallocated Wines"),
+          children: <Widget>[
+            UnallocatedBottleListPage(widget._user.data.uid),
+          ],
+        ),
+        Container(height: 20),
+      ],
     );
   }
 }
