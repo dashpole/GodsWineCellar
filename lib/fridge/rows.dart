@@ -20,6 +20,10 @@ class FridgeRow {
     return _number;
   }
 
+  int get capacity {
+    return _capacity;
+  }
+
   @override
   String toString() => "FridgeRow<$_number:$_capacity>";
 }

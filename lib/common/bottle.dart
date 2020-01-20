@@ -191,7 +191,6 @@ class BottleUpdateService {
       // TODO Can there be a race condition here?
       throw ("Can't move $numToMove bottles, since you only have ${unallocatedBottle.count} unallocated");
     }
-    // TODO Check to make sure we don't exceed the number of spots in the fridge
 
     // Add the bottles to the rowBottleGroup
     DocumentReference rowBottleGroupReference = _fridgesCollection
@@ -205,6 +204,8 @@ class BottleUpdateService {
     int countInRow = numToMove;
     if (rowBottleGroupDocument.exists)
       countInRow += Bottle.fromSnapshot(rowBottleGroupDocument).count;
+    if (countInRow > row.capacity)
+      throw ("Can't move $numToMove bottle(s) because there are ${countInRow - numToMove - row.capacity} spots available in the row");
     Map<String, dynamic> rowBottleData = unallocatedBottle.data;
     rowBottleData['count'] = countInRow;
     batch.setData(rowBottleGroupReference, rowBottleData);

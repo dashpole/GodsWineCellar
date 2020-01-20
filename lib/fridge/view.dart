@@ -42,8 +42,8 @@ class _FridgeViewState extends State<FridgeView> {
     });
   }
 
-  void _addBottleToFridgeRow(Bottle unallocatedBottle, int count) {
-    widget._bottleUpdateService.moveToFridge(unallocatedBottle, _fridge, _row, count);
+  Future<void> _addBottleToFridgeRow(Bottle unallocatedBottle, int count) async {
+    await widget._bottleUpdateService.moveToFridge(unallocatedBottle, _fridge, _row, count);
   }
 
   @override
