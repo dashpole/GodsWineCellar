@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
-import 'bottle.dart';
+import 'package:gods_wine_locator/common/bottle.dart';
 
 class UnallocatedBottleList extends StatefulWidget {
   final List<DocumentSnapshot> _documents;
@@ -29,17 +28,17 @@ class _UnallocatedBottleListState extends State<UnallocatedBottleList> {
   }
 }
 
-class UnallocatedBottleListPage extends StatefulWidget {
+class UnallocatedBottleListView extends StatefulWidget {
   final String _userID;
 
-  UnallocatedBottleListPage(this._userID);
+  UnallocatedBottleListView(this._userID);
 
   @override
-  _UnallocatedBottleListPageState createState() =>
-      _UnallocatedBottleListPageState();
+  _UnallocatedBottleListViewState createState() =>
+      _UnallocatedBottleListViewState();
 }
 
-class _UnallocatedBottleListPageState extends State<UnallocatedBottleListPage> {
+class _UnallocatedBottleListViewState extends State<UnallocatedBottleListView> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(

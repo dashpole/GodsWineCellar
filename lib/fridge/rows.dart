@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'fridge.dart';
+import 'fridges.dart';
 
 class FridgeRow {
   final int _number;

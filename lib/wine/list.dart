@@ -1,18 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'bottle.dart';
+import 'package:gods_wine_locator/common/bottle.dart';
 
-class WineListPage extends StatefulWidget {
+class WineListView extends StatefulWidget {
   final String _userID;
   final BottleUpdateService _updateService;
 
-  WineListPage(this._userID) : _updateService = BottleUpdateService(_userID);
+  WineListView(this._userID) : _updateService = BottleUpdateService(_userID);
 
   @override
-  _WineListPageState createState() => _WineListPageState();
+  _WineListViewState createState() => _WineListViewState();
 }
 
-class _WineListPageState extends State<WineListPage> {
+class _WineListViewState extends State<WineListView> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'fridge_row.dart';
+import 'rows.dart';
 
 class Fridge {
   final String _name;

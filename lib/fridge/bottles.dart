@@ -1,22 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'fridge.dart';
-import 'fridge_row.dart';
-import 'bottle.dart';
+import 'package:gods_wine_locator/common/bottle.dart';
+import 'fridges.dart';
+import 'rows.dart';
 
-class RowBottleGroupListView extends StatefulWidget {
+class RowBottleListView extends StatefulWidget {
   final String _userID;
   final Fridge _fridge;
   final FridgeRow _row;
   final Function _back;
 
-  RowBottleGroupListView(this._userID, this._fridge, this._row, this._back);
+  RowBottleListView(this._userID, this._fridge, this._row, this._back);
 
   @override
-  _RowBottleGroupListViewState createState() => _RowBottleGroupListViewState();
+  _RowBottleListViewState createState() => _RowBottleListViewState();
 }
 
-class _RowBottleGroupListViewState extends State<RowBottleGroupListView> {
+class _RowBottleListViewState extends State<RowBottleListView> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -27,7 +27,7 @@ class _RowBottleGroupListViewState extends State<RowBottleGroupListView> {
           .document(widget._fridge.uid)
           .collection("rows")
           .document(widget._row.number.toString())
-          .collection("bottlegroups")
+          .collection("bottles")
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Container();

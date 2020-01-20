@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'auth.dart';
-import 'wine_list.dart';
-import 'fridge_view.dart';
+import 'common/auth.dart';
+import 'wine/list.dart';
+import 'fridge/view.dart';
 
 void main() => runApp(MyApp());
 
@@ -87,8 +87,8 @@ class _MainBodyState extends State<MainBody> {
         actions: <Widget>[LoginWithGoogleButton(widget._user.data)],
       ),
       body: <Widget>[
-        WineListPage(widget._user.data.uid),
-        FridgePage(widget._user.data.uid),
+        WineListView(widget._user.data.uid),
+        FridgeView(widget._user.data.uid),
       ][_selectedIndex],
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
