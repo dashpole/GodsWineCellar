@@ -42,62 +42,10 @@ class FridgeRowUpdateService {
   }
 }
 
-class FridgeRowList extends StatefulWidget {
-  final List<DocumentSnapshot> _documents;
-  final FridgeRowUpdateService _updateService;
-  final String _userID;
-  final Fridge _fridge;
-  final Function _goToRow;
-
-  FridgeRowList(this._documents, this._userID, this._fridge, this._goToRow)
-      : _updateService = FridgeRowUpdateService(_userID, _fridge.uid);
-
-  @override
-  _FridgeRowListState createState() => _FridgeRowListState();
-}
-
-class _FridgeRowListState extends State<FridgeRowList> {
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-        padding: const EdgeInsets.only(top: 20.0),
-        // data is a DocumentSnapshot
-        itemCount: widget._documents.length,
-        //The `itemBuilder` callback will be called only with indices greater than
-        //or equal to zero and less than `itemCount`.
-        itemBuilder: (context, index) {
-          return _buildFridgeRowItem(context, widget._documents[index],
-              widget._fridge, widget._updateService);
-        });
-  }
-
-  Widget _buildFridgeRowItem(BuildContext context, DocumentSnapshot data,
-      Fridge fridge, FridgeRowUpdateService fridgeRowUpdateService) {
-    final _fridgeRow = FridgeRow.fromSnapshot(data);
-
-    return Padding(
-      key: ValueKey(_fridgeRow._uid),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(5.0),
-        ),
-        child: ListTile(
-          title: Text("Fridge Row Number: ${_fridgeRow._number}"),
-          onTap: () => (widget._goToRow(widget._fridge, _fridgeRow)),
-        ),
-      ),
-    );
-  }
-}
-
 class FridgeRowListView extends StatefulWidget {
   final String _userID;
   final Fridge _fridge;
   final Function _goToRow;
-
-  // TODO implement back button
   final Function _back;
 
   FridgeRowListView(this._userID, this._fridge, this._back, this._goToRow);
@@ -119,8 +67,41 @@ class _FridgeRowListViewState extends State<FridgeRowListView> {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Container();
-        return FridgeRowList(snapshot.data.documents, widget._userID,
-            widget._fridge, widget._goToRow);
+        return Scaffold(
+          appBar: AppBar(
+            leading: FlatButton(
+              child: Icon(Icons.arrow_back),
+              onPressed: widget._back,
+            ),
+            title: Text('${widget._fridge.name} fridge'),
+          ),
+          body: ListView.builder(
+            padding: const EdgeInsets.only(top: 20.0),
+            // data is a DocumentSnapshot
+            itemCount: snapshot.data.documents.length,
+            //The `itemBuilder` callback will be called only with indices greater than
+            //or equal to zero and less than `itemCount`.
+            itemBuilder: (context, index) {
+              final _fridgeRow =
+                  FridgeRow.fromSnapshot(snapshot.data.documents[index]);
+              return Padding(
+                key: ValueKey(_fridgeRow._uid),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(5.0),
+                  ),
+                  child: ListTile(
+                    title: Text("Fridge Row Number: ${_fridgeRow._number}"),
+                    onTap: () => (widget._goToRow(widget._fridge, _fridgeRow)),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
       },
     );
   }
