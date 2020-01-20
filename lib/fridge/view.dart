@@ -42,8 +42,12 @@ class _FridgeViewState extends State<FridgeView> {
     });
   }
 
-  Future<void> _addBottleToFridgeRow(Bottle unallocatedBottle, int count) async {
+  Future<void> _addBottlesToFridgeRow(Bottle unallocatedBottle, int count) async {
     await widget._bottleUpdateService.moveToFridge(unallocatedBottle, _fridge, _row, count);
+  }
+
+  Future<void> _removeBottlesFromFridgeRow(Bottle fridgeRowBottle, int count) async {
+    await widget._bottleUpdateService.removeFromFridge(fridgeRowBottle, _fridge, _row, count);
   }
 
   @override
@@ -54,13 +58,13 @@ class _FridgeViewState extends State<FridgeView> {
           child: <Widget>[
             FridgeListView(widget._userID, _goToFridge),
             FridgeRowListView(widget._userID, _fridge, _back, _goToRow),
-            RowBottleListView(widget._userID, _fridge, _row, _back),
+            RowBottleListView(widget._userID, _fridge, _row, _back, _removeBottlesFromFridgeRow),
           ][_selectedIndex],
         ),
         ExpansionTile(
           title: Text("Unallocated Wines"),
           children: <Widget>[
-            UnallocatedBottleListView(widget._userID, _addBottleToFridgeRow, _selectedIndex == 2),
+            UnallocatedBottleListView(widget._userID, _addBottlesToFridgeRow, _selectedIndex == 2),
           ],
         ),
         Container(height: 20),

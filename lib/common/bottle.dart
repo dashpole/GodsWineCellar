@@ -211,11 +211,36 @@ class BottleUpdateService {
     batch.setData(rowBottleGroupReference, rowBottleData);
 
     // Remove the bottles from the unallocated list
+    // TODO do we need to get the unallocatedBottle count inside a transaction to avoid race conditions?
     Map<String, dynamic> unallocatedData = {
       'count': unallocatedBottle.count - numToMove,
     };
     batch.updateData(_unallocatedCollection.document(unallocatedBottle.uid),
         unallocatedData);
+    return await batch.commit();
+  }
+
+  Future removeFromFridge(Bottle fridgeRowBottle, Fridge fridge, FridgeRow row,
+      int numToMove) async {
+    var batch = Firestore.instance.batch();
+    if (numToMove > fridgeRowBottle.count) {
+      // TODO Can there be a race condition here?
+      throw ("Can't remove $numToMove bottles, since you only have ${fridgeRowBottle.count} in the row");
+    }
+
+    // Remove the bottle from the row
+    int newRowCount = fridgeRowBottle.count - numToMove;
+    DocumentReference rowBottleReference =  _fridgesCollection.document(fridge.uid).collection("rows").document(row.number.toString()).collection("bottles").document(fridgeRowBottle.uid);
+    if (newRowCount == 0) rowBottleReference.delete();
+    rowBottleReference.updateData({'count': newRowCount});
+
+    // Add the bottles to the unallocated list
+    DocumentReference unallocatedReference = _unallocatedCollection.document(fridgeRowBottle._uid);
+    DocumentSnapshot unallocatedDocument = await unallocatedReference.get();
+    int newUnallocatedCount = numToMove;
+    if (unallocatedDocument.exists) newUnallocatedCount += Bottle.fromSnapshot(unallocatedDocument).count;
+    batch.updateData(unallocatedReference, {'count': newUnallocatedCount});
+
     return await batch.commit();
   }
 

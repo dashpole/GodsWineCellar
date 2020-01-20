@@ -9,8 +9,9 @@ class RowBottleListView extends StatefulWidget {
   final Fridge _fridge;
   final FridgeRow _row;
   final Function _back;
+  final Function _removeBottleFromFridgeRow;
 
-  RowBottleListView(this._userID, this._fridge, this._row, this._back);
+  RowBottleListView(this._userID, this._fridge, this._row, this._back, this._removeBottleFromFridgeRow);
 
   @override
   _RowBottleListViewState createState() => _RowBottleListViewState();
@@ -46,8 +47,24 @@ class _RowBottleListViewState extends State<RowBottleListView> {
             //The `itemBuilder` callback will be called only with indices greater than
             //or equal to zero and less than `itemCount`.
             itemBuilder: (context, index) {
+              Bottle _bottle = Bottle.fromSnapshot(snapshot.data.documents[index]);
               return BottleListItem(
-                  bottle: Bottle.fromSnapshot(snapshot.data.documents[index]));
+                  bottle: _bottle,
+                trailing: RaisedButton(
+                  // TODO(lexi) change the subtract icon to something better.
+                  child: Icon(
+                    Icons.remove_circle,
+                    color: Colors.indigoAccent,
+                  ),
+                  onPressed: () async {
+                    try {
+                      await widget._removeBottleFromFridgeRow(_bottle, 1);
+                    } catch (e) {
+                      Scaffold.of(context).showSnackBar(SnackBar(content: Text(e),));
+                    }
+                  },
+                ),
+              );
             },
           ),
         );
