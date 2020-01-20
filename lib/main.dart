@@ -1,8 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'auth.dart';
-import 'unallocated_list.dart';
 import 'wine_list.dart';
 import 'fridge_view.dart';
 
@@ -89,8 +87,8 @@ class _MainBodyState extends State<MainBody> {
         actions: <Widget>[LoginWithGoogleButton(widget._user.data)],
       ),
       body: <Widget>[
-        BottleBody(widget._user),
-        FridgeBody(widget._user),
+        WineListPage(widget._user.data.uid),
+        FridgePage(widget._user.data.uid),
       ][_selectedIndex],
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
@@ -120,61 +118,6 @@ class _MainBodyState extends State<MainBody> {
           onTap: _onNavBarItemTapped,
         ),
       ),
-    );
-  }
-}
-
-class BottleBody extends StatefulWidget {
-  final AsyncSnapshot<FirebaseUser> _user;
-
-  BottleBody(this._user);
-
-  @override
-  _BottleBodyState createState() => _BottleBodyState();
-}
-
-class _BottleBodyState extends State<BottleBody> {
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: Firestore.instance
-          .collection("users")
-          .document(widget._user.data.uid)
-          .collection("wines")
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return Container();
-        return BottleList(snapshot.data.documents, widget._user.data.uid);
-      },
-    );
-  }
-}
-
-class FridgeBody extends StatefulWidget {
-  final AsyncSnapshot<FirebaseUser> _user;
-
-  FridgeBody(this._user);
-
-  @override
-  _FridgeBodyState createState() => _FridgeBodyState();
-}
-
-class _FridgeBodyState extends State<FridgeBody> {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Expanded(
-          child: FridgePage(widget._user.data.uid),
-        ),
-        ExpansionTile(
-          title: Text("Unallocated Wines"),
-          children: <Widget>[
-            UnallocatedBottleListPage(widget._user.data.uid),
-          ],
-        ),
-        Container(height: 20),
-      ],
     );
   }
 }

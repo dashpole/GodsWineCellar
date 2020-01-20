@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'fridge_row.dart';
 import 'row_bottle_group.dart';
 import 'fridge.dart';
+import 'unallocated_list.dart';
 import 'dart:math';
 
 class FridgePage extends StatefulWidget {
@@ -40,10 +41,23 @@ class _FridgePageState extends State<FridgePage> {
 
   @override
   Widget build(BuildContext context) {
-    return <Widget>[
-      FridgeListView(widget._userID, _goToFridge),
-      FridgeRowListView(widget._userID, _fridge, _back, _goToRow),
-      RowBottleGroupListView(widget._userID, _fridge, _row, _back),
-    ][_selectedIndex];
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: <Widget>[
+            FridgeListView(widget._userID, _goToFridge),
+            FridgeRowListView(widget._userID, _fridge, _back, _goToRow),
+            RowBottleGroupListView(widget._userID, _fridge, _row, _back),
+          ][_selectedIndex],
+        ),
+        ExpansionTile(
+          title: Text("Unallocated Wines"),
+          children: <Widget>[
+            UnallocatedBottleListPage(widget._userID),
+          ],
+        ),
+        Container(height: 20),
+      ],
+    );
   }
 }

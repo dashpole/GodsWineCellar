@@ -2,27 +2,36 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'bottle.dart';
 
-class BottleList extends StatefulWidget {
-  final List<DocumentSnapshot> _documents;
+class WineListPage extends StatefulWidget {
+  final String _userID;
   final BottleUpdateService _updateService;
 
-  BottleList(this._documents, String userID)
-      : _updateService = BottleUpdateService(userID);
+  WineListPage(this._userID) : _updateService = BottleUpdateService(_userID);
 
   @override
-  _BottleListState createState() => _BottleListState();
+  _WineListPageState createState() => _WineListPageState();
 }
 
-class _BottleListState extends State<BottleList> {
+class _WineListPageState extends State<WineListPage> {
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 20.0),
-      // data is a DocumentSnapshot
-      itemCount: widget._documents.length,
-      itemBuilder: (context, index) {
-        return _buildBottleItem(
-            context, widget._documents[index], widget._updateService);
+    return StreamBuilder<QuerySnapshot>(
+      stream: Firestore.instance
+          .collection("users")
+          .document(widget._userID)
+          .collection("wines")
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return Container();
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 20.0),
+          // data is a DocumentSnapshot
+          itemCount: snapshot.data.documents.length,
+          itemBuilder: (context, index) {
+            return _buildBottleItem(
+                context, snapshot.data.documents[index], widget._updateService);
+          },
+        );
       },
     );
   }
