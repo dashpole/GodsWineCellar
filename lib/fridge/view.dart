@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gods_wine_locator/common/bottle.dart';
 import 'rows.dart';
 import 'bottles.dart';
 import 'fridges.dart';
@@ -7,8 +8,10 @@ import 'dart:math';
 
 class FridgeView extends StatefulWidget {
   final String _userID;
+  final BottleUpdateService _bottleUpdateService;
 
-  FridgeView(this._userID);
+  FridgeView(this._userID):
+  _bottleUpdateService = BottleUpdateService(_userID);
 
   @override
   _FridgeViewState createState() => _FridgeViewState();
@@ -39,6 +42,10 @@ class _FridgeViewState extends State<FridgeView> {
     });
   }
 
+  void _addBottleToFridgeRow(Bottle unallocatedBottle, int count) {
+    widget._bottleUpdateService.moveToFridge(unallocatedBottle, _fridge, _row, count);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -53,7 +60,7 @@ class _FridgeViewState extends State<FridgeView> {
         ExpansionTile(
           title: Text("Unallocated Wines"),
           children: <Widget>[
-            UnallocatedBottleListView(widget._userID),
+            UnallocatedBottleListView(widget._userID, _addBottleToFridgeRow, _selectedIndex == 2),
           ],
         ),
         Container(height: 20),

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:gods_wine_locator/fridge/fridges.dart';
+import 'package:gods_wine_locator/fridge/rows.dart';
 
 class BottleListItem extends StatelessWidget {
   final Bottle bottle;
@@ -168,7 +170,7 @@ class BottleUpdateService {
           await fridge.reference.collection("rows").getDocuments();
       await Future.forEach(rows.documents, (DocumentSnapshot row) async {
         QuerySnapshot bottles =
-            await row.reference.collection("bottlegroups").getDocuments();
+            await row.reference.collection("bottles").getDocuments();
         List<DocumentSnapshot> documents = bottles.documents;
         documents
             .retainWhere((rowBottle) => rowBottle.documentID == bottle.uid);
@@ -182,34 +184,34 @@ class BottleUpdateService {
     return await batch.commit();
   }
 
-  // TODO test this...
-  Future moveToFridge(
-      Bottle unallocatedBottle, String fridge, String row, int count) async {
+  Future moveToFridge(Bottle unallocatedBottle, Fridge fridge, FridgeRow row,
+      int numToMove) async {
     var batch = Firestore.instance.batch();
-    if (count > unallocatedBottle.count) {
+    if (numToMove > unallocatedBottle.count) {
       // TODO Can there be a race condition here?
-      throw ("Can't move $count bottles, since you only have ${unallocatedBottle.count} unallocated");
+      throw ("Can't move $numToMove bottles, since you only have ${unallocatedBottle.count} unallocated");
     }
+    // TODO Check to make sure we don't exceed the number of spots in the fridge
 
     // Add the bottles to the rowBottleGroup
     DocumentReference rowBottleGroupReference = _fridgesCollection
-        .document(fridge)
+        .document(fridge.uid)
         .collection("rows")
-        .document(row)
-        .collection("bottlegroups")
+        .document(row.number.toString())
+        .collection("bottles")
         .document(unallocatedBottle.uid);
     DocumentSnapshot rowBottleGroupDocument =
         await rowBottleGroupReference.get();
-    // TODO What happens here if the rowBottleGroup doesn't have the document yet?
-    Bottle rowBottleGroup = Bottle.fromSnapshot(rowBottleGroupDocument);
-    Map<String, dynamic> rbgData = {
-      'count': rowBottleGroup.count + count,
-    };
-    batch.updateData(rowBottleGroupReference, rbgData);
+    int countInRow = numToMove;
+    if (rowBottleGroupDocument.exists)
+      countInRow += Bottle.fromSnapshot(rowBottleGroupDocument).count;
+    Map<String, dynamic> rowBottleData = unallocatedBottle.data;
+    rowBottleData['count'] = countInRow;
+    batch.setData(rowBottleGroupReference, rowBottleData);
 
     // Remove the bottles from the unallocated list
     Map<String, dynamic> unallocatedData = {
-      'count': unallocatedBottle.count - count,
+      'count': unallocatedBottle.count - numToMove,
     };
     batch.updateData(_unallocatedCollection.document(unallocatedBottle.uid),
         unallocatedData);
@@ -259,7 +261,7 @@ class BottleUpdateService {
             await fridge.reference.collection("rows").getDocuments();
         await Future.forEach(rows.documents, (DocumentSnapshot row) async {
           QuerySnapshot bottles =
-              await row.reference.collection("bottlegroups").getDocuments();
+              await row.reference.collection("bottles").getDocuments();
           List<DocumentSnapshot> documents = bottles.documents;
           documents.retainWhere(
               (rowBottle) => rowBottle.documentID == wineListBottle.uid);
