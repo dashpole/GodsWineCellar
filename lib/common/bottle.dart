@@ -156,6 +156,8 @@ class BottleUpdateService {
       'count': count
     };
     final String newId = _winesCollection.document().documentID;
+    // Use a batch for deletions even though there are race conditions.
+    // getDocuments is not supported in transactions; only get(document) works.
     var batch = Firestore.instance.batch();
     batch.setData(_unallocatedCollection.document(newId), data);
     batch.setData(_winesCollection.document(newId), data);
@@ -163,6 +165,8 @@ class BottleUpdateService {
   }
 
   Future deleteBottle(Bottle bottle) async {
+    // Use a batch for deletions even though there are race conditions.
+    // getDocuments is not supported in transactions; only get(document) works.
     var batch = Firestore.instance.batch();
     QuerySnapshot fridges = await _fridgesCollection.getDocuments();
     await Future.forEach(fridges.documents, (DocumentSnapshot fridge) async {
@@ -184,119 +188,128 @@ class BottleUpdateService {
     return await batch.commit();
   }
 
-  Future moveToFridge(Bottle unallocatedBottle, Fridge fridge, FridgeRow row,
+  Future moveToFridge(String unallocatedBottleUid, Fridge fridge, FridgeRow row,
       int numToMove) async {
-    var batch = Firestore.instance.batch();
-    if (numToMove > unallocatedBottle.count) {
-      // TODO Can there be a race condition here?
-      throw ("Can't move $numToMove bottles, since you only have ${unallocatedBottle.count} unallocated");
-    }
+    return await Firestore.instance.runTransaction((Transaction tx) async {
+      DocumentSnapshot unallocatedBottleSnapshot = await tx.get(_unallocatedCollection.document(unallocatedBottleUid));
+      Bottle unallocatedBottle = Bottle.fromSnapshot(unallocatedBottleSnapshot);
+      if (numToMove > unallocatedBottle.count) {
+        throw ("Can't move $numToMove bottles, since you only have ${unallocatedBottle.count} unallocated");
+      }
 
-    // Add the bottles to the rowBottleGroup
-    DocumentReference rowBottleGroupReference = _fridgesCollection
-        .document(fridge.uid)
-        .collection("rows")
-        .document(row.number.toString())
-        .collection("bottles")
-        .document(unallocatedBottle.uid);
-    DocumentSnapshot rowBottleGroupDocument =
-        await rowBottleGroupReference.get();
-    int countInRow = numToMove;
-    if (rowBottleGroupDocument.exists)
-      countInRow += Bottle.fromSnapshot(rowBottleGroupDocument).count;
-    if (countInRow > row.capacity)
-      throw ("Can't move $numToMove bottle(s) because there are ${countInRow - numToMove - row.capacity} spots available in the row");
-    Map<String, dynamic> rowBottleData = unallocatedBottle.data;
-    rowBottleData['count'] = countInRow;
-    batch.setData(rowBottleGroupReference, rowBottleData);
+      // Add the bottles to the rowBottleGroup
+      DocumentReference rowBottleGroupReference = _fridgesCollection
+          .document(fridge.uid)
+          .collection("rows")
+          .document(row.number.toString())
+          .collection("bottles")
+          .document(unallocatedBottle.uid);
+      DocumentSnapshot rowBottleGroupDocument = await tx.get(rowBottleGroupReference);
+      int countInRow = numToMove;
+      if (rowBottleGroupDocument.exists)
+        countInRow += Bottle.fromSnapshot(rowBottleGroupDocument).count;
+      if (countInRow > row.capacity)
+        throw ("Can't move $numToMove bottle(s) because there are ${countInRow - numToMove - row.capacity} spots available in the row");
+      Map<String, dynamic> rowBottleData = unallocatedBottle.data;
+      rowBottleData['count'] = countInRow;
+      tx.set(rowBottleGroupReference, rowBottleData);
 
-    // Remove the bottles from the unallocated list
-    // TODO do we need to get the unallocatedBottle count inside a transaction to avoid race conditions?
-    Map<String, dynamic> unallocatedData = {
-      'count': unallocatedBottle.count - numToMove,
-    };
-    batch.updateData(_unallocatedCollection.document(unallocatedBottle.uid),
-        unallocatedData);
-    return await batch.commit();
+      // Remove the bottles from the unallocated list
+      Map<String, dynamic> unallocatedData = {
+        'count': unallocatedBottle.count - numToMove,
+      };
+      tx.update(_unallocatedCollection.document(unallocatedBottle.uid),
+          unallocatedData);
+    });
   }
 
-  Future removeFromFridge(Bottle fridgeRowBottle, Fridge fridge, FridgeRow row,
+  Future removeFromFridge(String fridgeRowBottleUid, Fridge fridge, FridgeRow row,
       int numToMove) async {
-    var batch = Firestore.instance.batch();
-    if (numToMove > fridgeRowBottle.count) {
-      // TODO Can there be a race condition here?
-      throw ("Can't remove $numToMove bottles, since you only have ${fridgeRowBottle.count} in the row");
-    }
+    return await Firestore.instance.runTransaction((Transaction tx) async {
+      DocumentSnapshot fridgeRowBottleSnapshot = await tx.get(_fridgesCollection.document(fridge.uid).collection("rows").document(row.number.toString()).collection("bottles").document(fridgeRowBottleUid));
+      Bottle fridgeRowBottle = Bottle.fromSnapshot(fridgeRowBottleSnapshot);
+      if (numToMove > fridgeRowBottle.count) {
+        throw ("Can't remove $numToMove bottles, since you only have ${fridgeRowBottle
+            .count} in the row");
+      }
 
-    // Remove the bottle from the row
-    int newRowCount = fridgeRowBottle.count - numToMove;
-    DocumentReference rowBottleReference =  _fridgesCollection.document(fridge.uid).collection("rows").document(row.number.toString()).collection("bottles").document(fridgeRowBottle.uid);
-    if (newRowCount == 0) rowBottleReference.delete();
-    rowBottleReference.updateData({'count': newRowCount});
+      // Remove the bottle from the row
+      int newRowCount = fridgeRowBottle.count - numToMove;
+      DocumentReference rowBottleReference = _fridgesCollection.document(
+          fridge.uid).collection("rows")
+          .document(row.number.toString())
+          .collection("bottles")
+          .document(fridgeRowBottle.uid);
+      if (newRowCount == 0) tx.delete(rowBottleReference);
+      tx.update(rowBottleReference, {'count': newRowCount});
 
-    // Add the bottles to the unallocated list
-    DocumentReference unallocatedReference = _unallocatedCollection.document(fridgeRowBottle._uid);
-    DocumentSnapshot unallocatedDocument = await unallocatedReference.get();
-    int newUnallocatedCount = numToMove;
-    if (unallocatedDocument.exists) newUnallocatedCount += Bottle.fromSnapshot(unallocatedDocument).count;
-    batch.updateData(unallocatedReference, {'count': newUnallocatedCount});
-
-    return await batch.commit();
+      // Add the bottles to the unallocated list
+      DocumentReference unallocatedReference = _unallocatedCollection.document(
+          fridgeRowBottle._uid);
+      DocumentSnapshot unallocatedDocument = await unallocatedReference.get();
+      int newUnallocatedCount = numToMove;
+      if (unallocatedDocument.exists) newUnallocatedCount += Bottle
+          .fromSnapshot(unallocatedDocument)
+          .count;
+      tx.update(unallocatedReference, {'count': newUnallocatedCount});
+    });
   }
 
-  Future updateBottleInfo(Bottle wineListBottle, String newName,
+  Future updateBottleInfo(String wineListBottleUid, String newName,
       String newWinery, String newLocation, int newCount) async {
-    var batch = Firestore.instance.batch();
-    if (newCount < 0) {
-      throw ("You must set a positive number of bottles.");
-    }
+    return await Firestore.instance.runTransaction((Transaction tx) async {
+      DocumentSnapshot wineListBottleSnapshot = await tx.get(_winesCollection.document(wineListBottleUid));
+      Bottle wineListBottle = Bottle.fromSnapshot(wineListBottleSnapshot);
+      if (newCount < 0) {
+        throw ("You must set a positive number of bottles.");
+      }
 
-    // Update the main wine list with all modified information, including count.
-    Map<String, dynamic> wineListDiff =
-        wineListBottle.diff(newName, newWinery, newLocation, newCount);
-    if (wineListDiff.isEmpty) {
-      return;
-    }
-    batch.updateData(
-        _winesCollection.document(wineListBottle._uid), wineListDiff);
+      // Update the main wine list with all modified information, including count.
+      Map<String, dynamic> wineListDiff =
+      wineListBottle.diff(newName, newWinery, newLocation, newCount);
+      if (wineListDiff.isEmpty) {
+        return;
+      }
+      tx.update(
+          _winesCollection.document(wineListBottle._uid), wineListDiff);
 
-    // Check to make sure unallocated isn't negative after the change
-    int deltaCount = newCount - wineListBottle.count;
-    DocumentSnapshot unallocatedDocument =
-        await _unallocatedCollection.document(wineListBottle._uid).get();
-    Bottle unallocatedBottle = Bottle.fromSnapshot(unallocatedDocument);
-    int newUnallocatedCount = unallocatedBottle.count + deltaCount;
-    if (newUnallocatedCount < 0) {
-      // TODO should this check happen in a transaction instead of a batch?
-      // In theory, there is a race condition here...
-      throw ("Not enough unallocated wine to decrease bottles by ${-deltaCount}");
-    }
-    Map<String, dynamic> unallocatedDiff = unallocatedBottle.diff(
-        newName, newWinery, newLocation, newUnallocatedCount);
-    batch.updateData(
-        _unallocatedCollection.document(wineListBottle._uid), unallocatedDiff);
+      // Check to make sure unallocated isn't negative after the change
+      int deltaCount = newCount - wineListBottle.count;
+      DocumentSnapshot unallocatedDocument =
+      await tx.get(_unallocatedCollection.document(wineListBottle._uid));
+      Bottle unallocatedBottle = Bottle.fromSnapshot(unallocatedDocument);
+      int newUnallocatedCount = unallocatedBottle.count + deltaCount;
+      if (newUnallocatedCount < 0) {
+        throw ("Not enough unallocated wine to decrease bottles by ${-deltaCount}");
+      }
+      Map<String, dynamic> unallocatedDiff = unallocatedBottle.diff(
+          newName, newWinery, newLocation, newUnallocatedCount);
+      tx.update(
+          _unallocatedCollection.document(wineListBottle._uid),
+          unallocatedDiff);
 
-    // Update all of the bottles in fridges, but do not update the count in
-    // fridge rows.
-    Map<String, dynamic> infoData =
-        wineListBottle.diffInfo(newName, newWinery, newLocation);
-    if (infoData.isNotEmpty) {
-      QuerySnapshot fridges = await _fridgesCollection.getDocuments();
-      await Future.forEach(fridges.documents, (DocumentSnapshot fridge) async {
-        QuerySnapshot rows =
-            await fridge.reference.collection("rows").getDocuments();
-        await Future.forEach(rows.documents, (DocumentSnapshot row) async {
-          QuerySnapshot bottles =
-              await row.reference.collection("bottles").getDocuments();
-          List<DocumentSnapshot> documents = bottles.documents;
-          documents.retainWhere(
-              (rowBottle) => rowBottle.documentID == wineListBottle.uid);
-          await Future.forEach(documents, (DocumentSnapshot document) {
-            batch.updateData(document.reference, infoData);
+      // Update all of the bottles in fridges, but do not update the count in
+      // fridge rows.
+      Map<String, dynamic> infoData =
+      wineListBottle.diffInfo(newName, newWinery, newLocation);
+      if (infoData.isNotEmpty) {
+        QuerySnapshot fridges = await _fridgesCollection.getDocuments();
+        await Future.forEach(
+            fridges.documents, (DocumentSnapshot fridge) async {
+          QuerySnapshot rows =
+          await fridge.reference.collection("rows").getDocuments();
+          await Future.forEach(rows.documents, (DocumentSnapshot row) async {
+            QuerySnapshot bottles =
+            await row.reference.collection("bottles").getDocuments();
+            List<DocumentSnapshot> documents = bottles.documents;
+            documents.retainWhere(
+                    (rowBottle) => rowBottle.documentID == wineListBottle.uid);
+            await Future.forEach(documents, (DocumentSnapshot document) {
+              tx.update(document.reference, infoData);
+            });
           });
         });
-      });
-    }
-    return await batch.commit();
+      }
+    });
   }
 }

@@ -60,7 +60,7 @@ class _RowBottleListViewState extends State<RowBottleListView> {
                     try {
                       await widget._removeBottleFromFridgeRow(_bottle, 1);
                     } catch (e) {
-                      Scaffold.of(context).showSnackBar(SnackBar(content: Text(e),));
+                      Scaffold.of(context).showSnackBar(SnackBar(content: Text(e.toString()),));
                     }
                   },
                 ),

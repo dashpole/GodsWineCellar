@@ -135,7 +135,7 @@ class _EditBottleDialogState extends State<EditBottleDialog> {
             if (_formKey.currentState.validate()) {
               try {
                 await widget._updateService.updateBottleInfo(
-                  widget._bottle,
+                  widget._bottle.uid,
                   widget._nameController.text,
                   widget._wineryController.text,
                   widget._locationController.text,

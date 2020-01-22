@@ -52,7 +52,7 @@ class _UnallocatedBottleListViewState extends State<UnallocatedBottleListView> {
                               try {
                                 await widget._addBottleToFridgeRow(_bottle, 1);
                               } catch (e) {
-                                Scaffold.of(context).showSnackBar(SnackBar(content: Text(e),));
+                                Scaffold.of(context).showSnackBar(SnackBar(content: Text(e.toString()),));
                               }
                             },
                           )
