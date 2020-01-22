@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:gods_wine_locator/common/bottle.dart';
 
+// WineListView displays all the wines a user has
 class WineListView extends StatefulWidget {
   final String _userID;
   final BottleUpdateService _updateService;
@@ -15,6 +16,7 @@ class WineListView extends StatefulWidget {
 class _WineListViewState extends State<WineListView> {
   @override
   Widget build(BuildContext context) {
+    // We use a StreamBuilder to rebuild the list of wines whenever the list in the database changes
     return StreamBuilder<QuerySnapshot>(
       stream: Firestore.instance
           .collection("users")
@@ -25,7 +27,6 @@ class _WineListViewState extends State<WineListView> {
         if (!snapshot.hasData) return Container();
         return ListView.builder(
           padding: const EdgeInsets.only(top: 20.0),
-          // data is a DocumentSnapshot
           itemCount: snapshot.data.documents.length,
           itemBuilder: (context, index) {
             return _buildBottleItem(
@@ -36,13 +37,16 @@ class _WineListViewState extends State<WineListView> {
     );
   }
 
+  // _buildBottleItem builds a single item in the bottle list
   Widget _buildBottleItem(BuildContext context, DocumentSnapshot data,
       BottleUpdateService bottleUpdateService) {
     final _wine = Bottle.fromSnapshot(data);
 
-// Build a list of bottle items
+    // BottleListItem handles displaying basic wine info. BottleListItem allows for adding additional pieces to that item - such as an Edit button.
+    // The Edit button on the left to allow users to edit/delete wine in this list.
     return BottleListItem(
       bottle: _wine,
+      // Edit Button brings up a pop-up menu with delete and edit
       trailing: PopupMenuButton(
         icon: Icon(Icons.menu),
         itemBuilder: (BuildContext context) {
@@ -62,6 +66,7 @@ class _WineListViewState extends State<WineListView> {
               child: ListTile(
                 title: Text("Edit"),
                 trailing: Icon(Icons.edit),
+                // Clicking edit brings up a dialogue to allow specifying the changes to make to the wine
                 onTap: () {
                   Navigator.pop(context);
                   showDialog(
@@ -80,6 +85,7 @@ class _WineListViewState extends State<WineListView> {
   }
 }
 
+// EditBottleDialog displays an AlertDialog that prompts the user to edit a specified wine
 class EditBottleDialog extends StatefulWidget {
   final Bottle _bottle;
   final BottleUpdateService _updateService;
@@ -88,6 +94,7 @@ class EditBottleDialog extends StatefulWidget {
   final TextEditingController _locationController;
   final TextEditingController _countController;
 
+  // Initialize the editable Text fields with the name, winery, location, and count respectively.
   EditBottleDialog(this._updateService, this._bottle)
       : _nameController = TextEditingController(text: _bottle.name),
         _wineryController = TextEditingController(text: _bottle.winery),
@@ -101,15 +108,18 @@ class EditBottleDialog extends StatefulWidget {
 
 class _EditBottleDialogState extends State<EditBottleDialog> {
   final _formKey = GlobalKey<FormState>();
+  // Keep track of the most recent error encountered during submission so we can display it to users.
   String _submitErr = "";
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text("Edit Your Wine"),
+      // BottleForm handles displaying and doing some validation (e.g. format validation) on the fields in the edit dialog.
       content: BottleForm(widget._nameController, widget._wineryController,
           widget._locationController, widget._countController, _formKey),
       actions: <Widget>[
+        // Display the error if it is set (else display empty Container)
         _submitErr.length == 0
             ? Container()
             : Container(
@@ -133,6 +143,7 @@ class _EditBottleDialogState extends State<EditBottleDialog> {
           child: Text('Submit'),
           onPressed: () async {
             if (_formKey.currentState.validate()) {
+              // Try submitting.  If it succeeds, close the edit dialog.  If it fails, display the error.
               try {
                 await widget._updateService.updateBottleInfo(
                   widget._bottle.uid,

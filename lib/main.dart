@@ -73,8 +73,12 @@ class MainBody extends StatefulWidget {
 }
 
 class _MainBodyState extends State<MainBody> {
+  // _selectedIndex keeps track of which of the views we are in: Wine List, or Fridge List
+  // The position of each element in the list of widgets below defines the index that selects that view.
+  // We just need to ensure that the index of the list view and navigation bar items are in the same position in their respective lists.
   int _selectedIndex = 0;
 
+  // _onNavBarItemTapped sets the index to the view that was tapped
   void _onNavBarItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
@@ -87,9 +91,11 @@ class _MainBodyState extends State<MainBody> {
         actions: <Widget>[LoginWithGoogleButton(widget._user.data)],
       ),
       body: <Widget>[
+        // Only the selected view is displayed
         WineListView(widget._user.data.uid),
         FridgeView(widget._user.data.uid),
       ][_selectedIndex],
+      // This is the button for adding a new bottle of wine
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
         onPressed: () {
@@ -101,6 +107,7 @@ class _MainBodyState extends State<MainBody> {
         },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      // The bottom bar of the main app allows selecting the Wine List or Fridge List
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         child: BottomNavigationBar(
