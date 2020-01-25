@@ -34,11 +34,10 @@ class _LoginWithGoogleButtonState extends State<LoginWithGoogleButton> {
 
       final FirebaseUser currentUser = await _auth.currentUser();
       assert(user.uid == currentUser.uid);
-      print("Successful login");
-      print(currentUser.toString());
-    } on Error catch (e) {
-      print("There was an error with login");
-      print(e);
+    } catch (e) {
+      Scaffold.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString()),
+      ));
     }
   }
 
@@ -46,9 +45,10 @@ class _LoginWithGoogleButtonState extends State<LoginWithGoogleButton> {
     try {
       await _auth.signOut();
       await _googleSignIn.signOut();
-    } on Error catch (e) {
-      print("There was an error with signout");
-      print(e);
+    } catch (e) {
+      Scaffold.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString()),
+      ));
     }
   }
 

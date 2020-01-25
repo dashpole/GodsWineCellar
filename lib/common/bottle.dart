@@ -250,17 +250,17 @@ class BottleUpdateService {
       }
 
       // Remove the bottle from the row
-      int newRowCount = fridgeRowBottle.count - numToMove;
+      int newAllocatedBottleCount = fridgeRowBottle.count - numToMove;
       DocumentReference rowBottleReference = _fridgesCollection
           .document(fridge.uid)
           .collection("rows")
           .document(row.number.toString())
           .collection("bottles")
           .document(fridgeRowBottle.uid);
-      if (newRowCount == 0)
+      if (newAllocatedBottleCount == 0)
         tx.delete(rowBottleReference);
       else
-        tx.update(rowBottleReference, {'count': newRowCount});
+        tx.update(rowBottleReference, {'count': newAllocatedBottleCount});
 
       // Add the bottles to the unallocated list
       DocumentReference unallocatedReference =
@@ -318,20 +318,24 @@ class BottleUpdateService {
       Map<String, dynamic> infoData =
           wineListBottle.diffInfo(newName, newWinery, newLocation);
       if (infoData.isNotEmpty) {
+        // List all fridges
         QuerySnapshot fridges = await _fridgesCollection.getDocuments();
+        // For each fridge...
         await Future.forEach(fridges.documents,
             (DocumentSnapshot fridge) async {
+          // List all rows
           QuerySnapshot rows =
               await fridge.reference.collection("rows").getDocuments();
+          // For each row...
           await Future.forEach(rows.documents, (DocumentSnapshot row) async {
-            QuerySnapshot bottles =
-                await row.reference.collection("bottles").getDocuments();
-            List<DocumentSnapshot> documents = bottles.documents;
-            documents
-                .retainWhere((rowBottle) => rowBottle.documentID == bottleUid);
-            await Future.forEach(documents, (DocumentSnapshot document) {
-              tx.update(document.reference, infoData);
-            });
+            // Update the bottle information if it is in the row
+            DocumentSnapshot bottle = await row.reference
+                .collection("bottles")
+                .document(bottleUid)
+                .get();
+            if (bottle.exists) {
+              tx.update(bottle.reference, infoData);
+            }
           });
         });
       }
