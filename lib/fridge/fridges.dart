@@ -26,6 +26,7 @@ class Fridge {
 }
 
 class FridgeUpdateService {
+  // _collection is the collection of fridges, set in the constructor
   final CollectionReference _collection;
   final String _userID;
 
@@ -36,11 +37,13 @@ class FridgeUpdateService {
             .collection("fridges"),
         _userID = userID;
 
+  // addFridge adds a new fridge
   Future addFridge(String name, int numRows, int rowCapacity) async {
     DocumentReference newFridge = _collection.document();
     await newFridge.setData({'name': name});
     final FridgeRowUpdateService fridgeRowUpdateService =
         FridgeRowUpdateService(_userID, newFridge.documentID);
+    // add rows to the fridge
     for (var i = 0; i < numRows; i++) {
       fridgeRowUpdateService.addFridgeRow(i, rowCapacity);
     }
@@ -51,6 +54,7 @@ class FridgeUpdateService {
   }
 }
 
+// the form to be filled out to add a new Fridge
 class FridgeForm extends StatefulWidget {
   final TextEditingController _nameController,
       _numRowsController,
@@ -145,7 +149,7 @@ class FridgeList extends StatefulWidget {
   final List<DocumentSnapshot> _documents;
   final FridgeUpdateService _updateService;
   final String _userID;
-  final Function _goToFridge;
+  final Function(Fridge) _goToFridge;
 
   FridgeList(this._documents, String userID, this._goToFridge)
       : _updateService = FridgeUpdateService(userID),
@@ -162,7 +166,6 @@ class _FridgeListState extends State<FridgeList> {
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.only(top: 20.0),
-      // data is a DocumentSnapshot
       itemCount: widget._documents.length + 1,
       //The `itemBuilder` callback will be called only with indices greater than
       //or equal to zero and less than `itemCount`.
@@ -233,6 +236,7 @@ class _FridgeListState extends State<FridgeList> {
     );
   }
 
+// the dialog that comes up when adding a fridge
   _addFridgeDialog(BuildContext context) {
     TextEditingController _nameController = TextEditingController();
     TextEditingController _numRowsController = TextEditingController();
@@ -269,7 +273,7 @@ class _FridgeListState extends State<FridgeList> {
 
 class FridgeListView extends StatefulWidget {
   final String _userID;
-  final Function _goToFridge;
+  final Function(Fridge) _goToFridge;
 
   FridgeListView(this._userID, this._goToFridge);
 
@@ -288,6 +292,7 @@ class _FridgeListViewState extends State<FridgeListView> {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Container();
+        //FridgeList requires: a list of fridge documents, the user's ID, and the fridge navigation function
         return FridgeList(
             snapshot.data.documents, widget._userID, widget._goToFridge);
       },
