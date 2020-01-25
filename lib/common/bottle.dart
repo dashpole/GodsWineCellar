@@ -257,8 +257,10 @@ class BottleUpdateService {
           .document(row.number.toString())
           .collection("bottles")
           .document(fridgeRowBottle.uid);
-      if (newRowCount == 0) tx.delete(rowBottleReference);
-      tx.update(rowBottleReference, {'count': newRowCount});
+      if (newRowCount == 0)
+        tx.delete(rowBottleReference);
+      else
+        tx.update(rowBottleReference, {'count': newRowCount});
 
       // Add the bottles to the unallocated list
       DocumentReference unallocatedReference =
@@ -277,14 +279,24 @@ class BottleUpdateService {
   // are treated as adding/removing bottles from the unallocated list.  This
   // means the count of bottles in fridge rows is not changed, and the change in
   // the number of bottles is added to the unallocated list.
-  Future updateBottleInfo(String wineListBottleUid, String newName,
-      String newWinery, String newLocation, int newCount) async {
+  Future updateBottleInfo(String bottleUid, String newName, String newWinery,
+      String newLocation, int newCount) async {
     return await Firestore.instance.runTransaction((Transaction tx) async {
       DocumentSnapshot wineListBottleSnapshot =
-          await tx.get(_winesCollection.document(wineListBottleUid));
+          await tx.get(_winesCollection.document(bottleUid));
       Bottle wineListBottle = Bottle.fromSnapshot(wineListBottleSnapshot);
       if (newCount < 0) {
         throw ("You must set a positive number of bottles.");
+      }
+
+      // Check to make sure unallocated isn't negative after the change.
+      int deltaCount = newCount - wineListBottle.count;
+      DocumentSnapshot unallocatedDocument =
+          await tx.get(_unallocatedCollection.document(bottleUid));
+      Bottle unallocatedBottle = Bottle.fromSnapshot(unallocatedDocument);
+      int newUnallocatedCount = unallocatedBottle.count + deltaCount;
+      if (newUnallocatedCount < 0) {
+        throw ("Not enough unallocated wine to decrease bottles by ${-deltaCount}");
       }
 
       // Update the main wine list with all modified information, including count.
@@ -293,23 +305,13 @@ class BottleUpdateService {
       if (wineListDiff.isEmpty) {
         return;
       }
-      tx.update(_winesCollection.document(wineListBottle._uid), wineListDiff);
+      tx.update(_winesCollection.document(bottleUid), wineListDiff);
 
-      // Check to make sure unallocated isn't negative after the change.
-      int deltaCount = newCount - wineListBottle.count;
-      DocumentSnapshot unallocatedDocument =
-          await tx.get(_unallocatedCollection.document(wineListBottle._uid));
-      Bottle unallocatedBottle = Bottle.fromSnapshot(unallocatedDocument);
-      int newUnallocatedCount = unallocatedBottle.count + deltaCount;
-      if (newUnallocatedCount < 0) {
-        throw ("Not enough unallocated wine to decrease bottles by ${-deltaCount}");
-      }
       // Update the unallocated list with the new information, including the
       // count we just computed.
       Map<String, dynamic> unallocatedDiff = unallocatedBottle.diff(
           newName, newWinery, newLocation, newUnallocatedCount);
-      tx.update(_unallocatedCollection.document(wineListBottle._uid),
-          unallocatedDiff);
+      tx.update(_unallocatedCollection.document(bottleUid), unallocatedDiff);
 
       // Update information for all of the bottles in fridges, but do not update
       // the count.
@@ -325,8 +327,8 @@ class BottleUpdateService {
             QuerySnapshot bottles =
                 await row.reference.collection("bottles").getDocuments();
             List<DocumentSnapshot> documents = bottles.documents;
-            documents.retainWhere(
-                (rowBottle) => rowBottle.documentID == wineListBottle.uid);
+            documents
+                .retainWhere((rowBottle) => rowBottle.documentID == bottleUid);
             await Future.forEach(documents, (DocumentSnapshot document) {
               tx.update(document.reference, infoData);
             });
