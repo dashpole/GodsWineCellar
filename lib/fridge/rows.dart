@@ -49,10 +49,11 @@ class FridgeRowUpdateService {
 class FridgeRowListView extends StatefulWidget {
   final String _userID;
   final Fridge _fridge;
-  final Function _goToRow;
+  final Function _navigateToRow;
   final Function _back;
 
-  FridgeRowListView(this._userID, this._fridge, this._back, this._goToRow);
+  FridgeRowListView(
+      this._userID, this._fridge, this._back, this._navigateToRow);
 
   @override
   _FridgeRowListViewState createState() => _FridgeRowListViewState();
@@ -81,7 +82,6 @@ class _FridgeRowListViewState extends State<FridgeRowListView> {
           ),
           body: ListView.builder(
             padding: const EdgeInsets.only(top: 20.0),
-            // data is a DocumentSnapshot
             itemCount: snapshot.data.documents.length,
             //The `itemBuilder` callback will be called only with indices greater than
             //or equal to zero and less than `itemCount`.
@@ -99,7 +99,8 @@ class _FridgeRowListViewState extends State<FridgeRowListView> {
                   ),
                   child: ListTile(
                     title: Text("Fridge Row Number: ${_fridgeRow._number}"),
-                    onTap: () => (widget._goToRow(widget._fridge, _fridgeRow)),
+                    onTap: () =>
+                        (widget._navigateToRow(widget._fridge, _fridgeRow)),
                   ),
                 ),
               );

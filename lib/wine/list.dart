@@ -108,6 +108,7 @@ class EditBottleDialog extends StatefulWidget {
 
 class _EditBottleDialogState extends State<EditBottleDialog> {
   final _formKey = GlobalKey<FormState>();
+
   // Keep track of the most recent error encountered during submission so we can display it to users.
   String _submitErr = "";
 

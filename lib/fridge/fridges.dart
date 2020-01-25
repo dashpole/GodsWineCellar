@@ -145,143 +145,21 @@ class FridgeFormState extends State<FridgeForm> {
   }
 }
 
-class FridgeList extends StatefulWidget {
-  final List<DocumentSnapshot> _documents;
-  final FridgeUpdateService _updateService;
-  final String _userID;
-  final Function(Fridge) _goToFridge;
-
-  FridgeList(this._documents, String userID, this._goToFridge)
-      : _updateService = FridgeUpdateService(userID),
-        _userID = userID;
-
-  @override
-  _FridgeListState createState() => _FridgeListState();
-}
-
-class _FridgeListState extends State<FridgeList> {
-  final _formKey = GlobalKey<FormState>();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 20.0),
-      itemCount: widget._documents.length + 1,
-      //The `itemBuilder` callback will be called only with indices greater than
-      //or equal to zero and less than `itemCount`.
-      itemBuilder: (context, index) {
-        if (index == widget._documents.length) {
-          return Padding(
-            key: ValueKey("Add a fridge"),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(5.0),
-              ),
-              child: ListTile(
-                leading: Icon(
-                  Icons.add_box,
-                  color: Colors.deepPurple,
-                ),
-                title: Text("Add a fridge"),
-                // onTap, execute the _addFridgeDialog function
-                onTap: () => _addFridgeDialog(context),
-              ),
-            ),
-          );
-        }
-        Fridge _fridge = Fridge.fromSnapshot(widget._documents[index]);
-        return Padding(
-          key: ValueKey(_fridge._uid),
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(5.0),
-            ),
-            child: ListTile(
-              title: Text(_fridge._name),
-              onLongPress: () => showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: Text("Confirm Delete Fridge"),
-                      content:
-                          Text("Are you sure you want to delete your fridge? \n"
-                              "This will delete all wines in your fridge."),
-                      actions: <Widget>[
-                        FlatButton(
-                          child: Text('Yes'),
-                          textColor: Colors.red,
-                          onPressed: () async {
-                            await widget._updateService.deleteFridge(_fridge);
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                        FlatButton(
-                          child: Text('Cancel'),
-                          textColor: Colors.grey,
-                          onPressed: () => Navigator.of(context).pop(),
-                        )
-                      ],
-                    );
-                  }),
-              onTap: () => (widget._goToFridge(_fridge)),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-// the dialog that comes up when adding a fridge
-  _addFridgeDialog(BuildContext context) {
-    TextEditingController _nameController = TextEditingController();
-    TextEditingController _numRowsController = TextEditingController();
-    TextEditingController _rowCapController = TextEditingController();
-
-    return showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Add Your Fridge"),
-          content: FridgeForm(_nameController, _numRowsController,
-              _rowCapController, this._formKey),
-          actions: <Widget>[
-            MaterialButton(
-              elevation: 3.0,
-              child: Text('Submit'),
-              onPressed: () async {
-                if (_formKey.currentState.validate()) {
-                  await widget._updateService.addFridge(
-                    _nameController.text.toString(),
-                    int.parse(_numRowsController.text),
-                    int.parse(_rowCapController.text),
-                  );
-                  Navigator.of(context).pop();
-                }
-              },
-            )
-          ],
-        );
-      },
-    );
-  }
-}
-
 class FridgeListView extends StatefulWidget {
   final String _userID;
-  final Function(Fridge) _goToFridge;
+  final Function(Fridge) _navigateToFridge;
+  final FridgeUpdateService _updateService;
 
-  FridgeListView(this._userID, this._goToFridge);
+  FridgeListView(this._userID, this._navigateToFridge)
+      : _updateService = FridgeUpdateService(_userID);
 
   @override
   _FridgeListViewState createState() => _FridgeListViewState();
 }
 
 class _FridgeListViewState extends State<FridgeListView> {
+  final _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -293,8 +171,116 @@ class _FridgeListViewState extends State<FridgeListView> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Container();
         //FridgeList requires: a list of fridge documents, the user's ID, and the fridge navigation function
-        return FridgeList(
-            snapshot.data.documents, widget._userID, widget._goToFridge);
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 20.0),
+          itemCount: snapshot.data.documents.length + 1,
+          //The `itemBuilder` callback will be called only with indices greater than
+          //or equal to zero and less than `itemCount`.
+          itemBuilder: (context, index) {
+            if (index == snapshot.data.documents.length) {
+              return Padding(
+                key: ValueKey("Add a fridge"),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(5.0),
+                  ),
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.add_box,
+                      color: Colors.deepPurple,
+                    ),
+                    title: Text("Add a fridge"),
+                    onTap: () {
+                      // onTap, show an AlertDialog that allows users to add a fridge
+                      TextEditingController _nameController =
+                          TextEditingController();
+                      TextEditingController _numRowsController =
+                          TextEditingController();
+                      TextEditingController _rowCapController =
+                          TextEditingController();
+
+                      return showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: Text("Add Your Fridge"),
+                            content: FridgeForm(
+                                _nameController,
+                                _numRowsController,
+                                _rowCapController,
+                                this._formKey),
+                            actions: <Widget>[
+                              MaterialButton(
+                                elevation: 3.0,
+                                child: Text('Submit'),
+                                onPressed: () async {
+                                  if (_formKey.currentState.validate()) {
+                                    await widget._updateService.addFridge(
+                                      _nameController.text.toString(),
+                                      int.parse(_numRowsController.text),
+                                      int.parse(_rowCapController.text),
+                                    );
+                                    Navigator.of(context).pop();
+                                  }
+                                },
+                              )
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              );
+            }
+            Fridge _fridge =
+                Fridge.fromSnapshot(snapshot.data.documents[index]);
+            return Padding(
+              key: ValueKey(_fridge._uid),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(5.0),
+                ),
+                child: ListTile(
+                  title: Text(_fridge._name),
+                  onLongPress: () => showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text("Confirm Delete Fridge"),
+                          content: Text(
+                              "Are you sure you want to delete your fridge? \n"
+                              "This will delete all wines in your fridge."),
+                          actions: <Widget>[
+                            FlatButton(
+                              child: Text('Yes'),
+                              textColor: Colors.red,
+                              onPressed: () async {
+                                await widget._updateService
+                                    .deleteFridge(_fridge);
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                            FlatButton(
+                              child: Text('Cancel'),
+                              textColor: Colors.grey,
+                              onPressed: () => Navigator.of(context).pop(),
+                            )
+                          ],
+                        );
+                      }),
+                  onTap: () => (widget._navigateToFridge(_fridge)),
+                ),
+              ),
+            );
+          },
+        );
       },
     );
   }

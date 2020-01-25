@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:gods_wine_locator/fridge/fridges.dart';
 import 'package:gods_wine_locator/fridge/rows.dart';
 
+// BottleListItem displays a list item with information about a bottle.  It
+// allows customizing the trailing widget at the right for adding buttons, etc.
 class BottleListItem extends StatelessWidget {
   final Bottle bottle;
   final Widget trailing;
@@ -138,6 +140,8 @@ class BottleUpdateService {
             .document(userID)
             .collection("unallocated");
 
+  // addBottle creates a new bottle in the database.  It adds the bottle to the
+  // wine list and the unallocated list.
   Future<void> addBottle(
       String name, String winery, String location, int count) async {
     QuerySnapshot matchesQuery = await _winesCollection
@@ -164,6 +168,8 @@ class BottleUpdateService {
     return await batch.commit();
   }
 
+  // deleteBottle removes all occurrences of a bottle from the database,
+  // including from the wine list, unallocated list, and all bottles in fridges.
   Future deleteBottle(Bottle bottle) async {
     // Use a batch for deletions even though there are race conditions.
     // getDocuments is not supported in transactions; only get(document) works.
@@ -188,10 +194,13 @@ class BottleUpdateService {
     return await batch.commit();
   }
 
+  // moveToFridge removes numToMove bottles from the unallocated list and add
+  // them to the fridge list.
   Future moveToFridge(String unallocatedBottleUid, Fridge fridge, FridgeRow row,
       int numToMove) async {
     return await Firestore.instance.runTransaction((Transaction tx) async {
-      DocumentSnapshot unallocatedBottleSnapshot = await tx.get(_unallocatedCollection.document(unallocatedBottleUid));
+      DocumentSnapshot unallocatedBottleSnapshot =
+          await tx.get(_unallocatedCollection.document(unallocatedBottleUid));
       Bottle unallocatedBottle = Bottle.fromSnapshot(unallocatedBottleSnapshot);
       if (numToMove > unallocatedBottle.count) {
         throw ("Can't move $numToMove bottles, since you only have ${unallocatedBottle.count} unallocated");
@@ -204,7 +213,8 @@ class BottleUpdateService {
           .document(row.number.toString())
           .collection("bottles")
           .document(unallocatedBottle.uid);
-      DocumentSnapshot rowBottleGroupDocument = await tx.get(rowBottleGroupReference);
+      DocumentSnapshot rowBottleGroupDocument =
+          await tx.get(rowBottleGroupReference);
       int countInRow = numToMove;
       if (rowBottleGroupDocument.exists)
         countInRow += Bottle.fromSnapshot(rowBottleGroupDocument).count;
@@ -223,20 +233,27 @@ class BottleUpdateService {
     });
   }
 
-  Future removeFromFridge(String fridgeRowBottleUid, Fridge fridge, FridgeRow row,
-      int numToMove) async {
+  // removeFromFridge removes numToMove bottles from the specified FridgeRow,
+  // and adds them to the unallocated list.
+  Future removeFromFridge(String fridgeRowBottleUid, Fridge fridge,
+      FridgeRow row, int numToMove) async {
     return await Firestore.instance.runTransaction((Transaction tx) async {
-      DocumentSnapshot fridgeRowBottleSnapshot = await tx.get(_fridgesCollection.document(fridge.uid).collection("rows").document(row.number.toString()).collection("bottles").document(fridgeRowBottleUid));
+      DocumentSnapshot fridgeRowBottleSnapshot = await tx.get(_fridgesCollection
+          .document(fridge.uid)
+          .collection("rows")
+          .document(row.number.toString())
+          .collection("bottles")
+          .document(fridgeRowBottleUid));
       Bottle fridgeRowBottle = Bottle.fromSnapshot(fridgeRowBottleSnapshot);
       if (numToMove > fridgeRowBottle.count) {
-        throw ("Can't remove $numToMove bottles, since you only have ${fridgeRowBottle
-            .count} in the row");
+        throw ("Can't remove $numToMove bottles, since you only have ${fridgeRowBottle.count} in the row");
       }
 
       // Remove the bottle from the row
       int newRowCount = fridgeRowBottle.count - numToMove;
-      DocumentReference rowBottleReference = _fridgesCollection.document(
-          fridge.uid).collection("rows")
+      DocumentReference rowBottleReference = _fridgesCollection
+          .document(fridge.uid)
+          .collection("rows")
           .document(row.number.toString())
           .collection("bottles")
           .document(fridgeRowBottle.uid);
@@ -244,21 +261,27 @@ class BottleUpdateService {
       tx.update(rowBottleReference, {'count': newRowCount});
 
       // Add the bottles to the unallocated list
-      DocumentReference unallocatedReference = _unallocatedCollection.document(
-          fridgeRowBottle._uid);
+      DocumentReference unallocatedReference =
+          _unallocatedCollection.document(fridgeRowBottle._uid);
       DocumentSnapshot unallocatedDocument = await unallocatedReference.get();
       int newUnallocatedCount = numToMove;
-      if (unallocatedDocument.exists) newUnallocatedCount += Bottle
-          .fromSnapshot(unallocatedDocument)
-          .count;
+      if (unallocatedDocument.exists)
+        newUnallocatedCount += Bottle.fromSnapshot(unallocatedDocument).count;
       tx.update(unallocatedReference, {'count': newUnallocatedCount});
     });
   }
 
+  // updateBottleInfo updates the information for a group of bottles, and
+  // ensures the changes are applied to all bottles in the database, including
+  // wine list, unallocated list, and bottles in fridges.  Updates to the count
+  // are treated as adding/removing bottles from the unallocated list.  This
+  // means the count of bottles in fridge rows is not changed, and the change in
+  // the number of bottles is added to the unallocated list.
   Future updateBottleInfo(String wineListBottleUid, String newName,
       String newWinery, String newLocation, int newCount) async {
     return await Firestore.instance.runTransaction((Transaction tx) async {
-      DocumentSnapshot wineListBottleSnapshot = await tx.get(_winesCollection.document(wineListBottleUid));
+      DocumentSnapshot wineListBottleSnapshot =
+          await tx.get(_winesCollection.document(wineListBottleUid));
       Bottle wineListBottle = Bottle.fromSnapshot(wineListBottleSnapshot);
       if (newCount < 0) {
         throw ("You must set a positive number of bottles.");
@@ -266,44 +289,44 @@ class BottleUpdateService {
 
       // Update the main wine list with all modified information, including count.
       Map<String, dynamic> wineListDiff =
-      wineListBottle.diff(newName, newWinery, newLocation, newCount);
+          wineListBottle.diff(newName, newWinery, newLocation, newCount);
       if (wineListDiff.isEmpty) {
         return;
       }
-      tx.update(
-          _winesCollection.document(wineListBottle._uid), wineListDiff);
+      tx.update(_winesCollection.document(wineListBottle._uid), wineListDiff);
 
-      // Check to make sure unallocated isn't negative after the change
+      // Check to make sure unallocated isn't negative after the change.
       int deltaCount = newCount - wineListBottle.count;
       DocumentSnapshot unallocatedDocument =
-      await tx.get(_unallocatedCollection.document(wineListBottle._uid));
+          await tx.get(_unallocatedCollection.document(wineListBottle._uid));
       Bottle unallocatedBottle = Bottle.fromSnapshot(unallocatedDocument);
       int newUnallocatedCount = unallocatedBottle.count + deltaCount;
       if (newUnallocatedCount < 0) {
         throw ("Not enough unallocated wine to decrease bottles by ${-deltaCount}");
       }
+      // Update the unallocated list with the new information, including the
+      // count we just computed.
       Map<String, dynamic> unallocatedDiff = unallocatedBottle.diff(
           newName, newWinery, newLocation, newUnallocatedCount);
-      tx.update(
-          _unallocatedCollection.document(wineListBottle._uid),
+      tx.update(_unallocatedCollection.document(wineListBottle._uid),
           unallocatedDiff);
 
-      // Update all of the bottles in fridges, but do not update the count in
-      // fridge rows.
+      // Update information for all of the bottles in fridges, but do not update
+      // the count.
       Map<String, dynamic> infoData =
-      wineListBottle.diffInfo(newName, newWinery, newLocation);
+          wineListBottle.diffInfo(newName, newWinery, newLocation);
       if (infoData.isNotEmpty) {
         QuerySnapshot fridges = await _fridgesCollection.getDocuments();
-        await Future.forEach(
-            fridges.documents, (DocumentSnapshot fridge) async {
+        await Future.forEach(fridges.documents,
+            (DocumentSnapshot fridge) async {
           QuerySnapshot rows =
-          await fridge.reference.collection("rows").getDocuments();
+              await fridge.reference.collection("rows").getDocuments();
           await Future.forEach(rows.documents, (DocumentSnapshot row) async {
             QuerySnapshot bottles =
-            await row.reference.collection("bottles").getDocuments();
+                await row.reference.collection("bottles").getDocuments();
             List<DocumentSnapshot> documents = bottles.documents;
             documents.retainWhere(
-                    (rowBottle) => rowBottle.documentID == wineListBottle.uid);
+                (rowBottle) => rowBottle.documentID == wineListBottle.uid);
             await Future.forEach(documents, (DocumentSnapshot document) {
               tx.update(document.reference, infoData);
             });

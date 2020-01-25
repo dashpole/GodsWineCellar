@@ -8,10 +8,11 @@ class RowBottleListView extends StatefulWidget {
   final String _userID;
   final Fridge _fridge;
   final FridgeRow _row;
-  final Function _back;
-  final Function _removeBottleFromFridgeRow;
+  final Function() _navigateBack;
+  final Function(Bottle, int) _removeBottleFromFridgeRow;
 
-  RowBottleListView(this._userID, this._fridge, this._row, this._back, this._removeBottleFromFridgeRow);
+  RowBottleListView(this._userID, this._fridge, this._row, this._navigateBack,
+      this._removeBottleFromFridgeRow);
 
   @override
   _RowBottleListViewState createState() => _RowBottleListViewState();
@@ -36,20 +37,21 @@ class _RowBottleListViewState extends State<RowBottleListView> {
           appBar: AppBar(
             leading: FlatButton(
               child: Icon(Icons.arrow_back),
-              onPressed: widget._back,
+              onPressed: widget._navigateBack,
             ),
-            title: Text('${widget._fridge.name} fridge, row ${widget._row.number}'),
+            title: Text(
+                '${widget._fridge.name} fridge, row ${widget._row.number}'),
           ),
           body: ListView.builder(
             padding: const EdgeInsets.only(top: 20.0),
-            // data is a DocumentSnapshot
             itemCount: snapshot.data.documents.length,
             //The `itemBuilder` callback will be called only with indices greater than
             //or equal to zero and less than `itemCount`.
             itemBuilder: (context, index) {
-              Bottle _bottle = Bottle.fromSnapshot(snapshot.data.documents[index]);
+              Bottle _bottle =
+                  Bottle.fromSnapshot(snapshot.data.documents[index]);
               return BottleListItem(
-                  bottle: _bottle,
+                bottle: _bottle,
                 trailing: RaisedButton(
                   // TODO(lexi) change the subtract icon to something better.
                   child: Icon(
@@ -60,7 +62,9 @@ class _RowBottleListViewState extends State<RowBottleListView> {
                     try {
                       await widget._removeBottleFromFridgeRow(_bottle, 1);
                     } catch (e) {
-                      Scaffold.of(context).showSnackBar(SnackBar(content: Text(e.toString()),));
+                      Scaffold.of(context).showSnackBar(SnackBar(
+                        content: Text(e.toString()),
+                      ));
                     }
                   },
                 ),
