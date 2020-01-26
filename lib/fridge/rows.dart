@@ -72,12 +72,13 @@ class _FridgeRowListViewState extends State<FridgeRowListView> {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Container();
-        // Convert the List<DocumentSnapshot> to a List<FridgeRows> using map()
+        // Convert the List<DocumentSnapshot> to a List<FridgeRows> using map().
+        // Map takes in a function that is applied to each list element.
         List<FridgeRow> rows = snapshot.data.documents
-            .map((a) => FridgeRow.fromSnapshot(a))
+            .map((DocumentSnapshot a) => FridgeRow.fromSnapshot(a))
             .toList();
         // Sort the rows by the row number
-        rows.sort((a, b) => a.number.compareTo(b.number));
+        rows.sort((FridgeRow a, b) => a.number.compareTo(b.number));
         return Scaffold(
           appBar: AppBar(
             leading: FlatButton(
