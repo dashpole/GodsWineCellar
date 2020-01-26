@@ -96,25 +96,27 @@ class _WineListViewState extends State<WineListView> {
 class EditBottleDialog extends StatefulWidget {
   final Bottle _bottle;
   final BottleUpdateService _updateService;
-  final TextEditingController _nameController;
-  final TextEditingController _wineryController;
-  final TextEditingController _locationController;
-  final TextEditingController _countController;
 
   // Initialize the editable Text fields with the name, winery, location, and count respectively.
-  EditBottleDialog(this._updateService, this._bottle)
+  EditBottleDialog(this._updateService, this._bottle);
+
+  @override
+  _EditBottleDialogState createState() => _EditBottleDialogState(_bottle);
+}
+
+class _EditBottleDialogState extends State<EditBottleDialog> {
+  TextEditingController _nameController;
+  TextEditingController _wineryController;
+  TextEditingController _locationController;
+  TextEditingController _countController;
+  final _formKey = GlobalKey<FormState>();
+
+  _EditBottleDialogState(Bottle _bottle)
       : _nameController = TextEditingController(text: _bottle.name),
         _wineryController = TextEditingController(text: _bottle.winery),
         _locationController = TextEditingController(text: _bottle.location),
         _countController =
-            TextEditingController(text: _bottle.count.toString());
-
-  @override
-  _EditBottleDialogState createState() => _EditBottleDialogState();
-}
-
-class _EditBottleDialogState extends State<EditBottleDialog> {
-  final _formKey = GlobalKey<FormState>();
+        TextEditingController(text: _bottle.count.toString());
 
   // Keep track of the most recent error encountered during submission so we can display it to users.
   String _submitErr = "";
@@ -124,8 +126,8 @@ class _EditBottleDialogState extends State<EditBottleDialog> {
     return AlertDialog(
       title: Text("Edit Your Wine"),
       // BottleForm handles displaying and doing some validation (e.g. format validation) on the fields in the edit dialog.
-      content: BottleForm(widget._nameController, widget._wineryController,
-          widget._locationController, widget._countController, _formKey),
+      content: BottleForm(_nameController, _wineryController,
+          _locationController, _countController, _formKey),
       actions: <Widget>[
         // Display the error if it is set (else display empty Container)
         _submitErr.length == 0
@@ -155,10 +157,10 @@ class _EditBottleDialogState extends State<EditBottleDialog> {
               try {
                 await widget._updateService.updateBottleInfo(
                   widget._bottle.uid,
-                  widget._nameController.text,
-                  widget._wineryController.text,
-                  widget._locationController.text,
-                  int.parse(widget._countController.text),
+                  _nameController.text,
+                  _wineryController.text,
+                  _locationController.text,
+                  int.parse(_countController.text),
                 );
                 Navigator.of(context).pop();
               } catch (e) {
