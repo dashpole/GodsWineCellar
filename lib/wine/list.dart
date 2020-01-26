@@ -116,7 +116,7 @@ class _EditBottleDialogState extends State<EditBottleDialog> {
         _wineryController = TextEditingController(text: _bottle.winery),
         _locationController = TextEditingController(text: _bottle.location),
         _countController =
-        TextEditingController(text: _bottle.count.toString());
+            TextEditingController(text: _bottle.count.toString());
 
   // Keep track of the most recent error encountered during submission so we can display it to users.
   String _submitErr = "";
@@ -202,6 +202,23 @@ class BottleFormState extends State<BottleForm> {
           children: <Widget>[
             Padding(
               child: TextFormField(
+                controller: widget._wineryController,
+                validator: (value) {
+                  if (value.isEmpty) {
+                    return 'Please enter a bottle winery';
+                  }
+                  return null;
+                },
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Winery',
+                ),
+              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7.0),
+            ),
+            Padding(
+              child: TextFormField(
                 autofocus: true,
                 controller: widget._nameController,
                 validator: (value) {
@@ -213,23 +230,6 @@ class BottleFormState extends State<BottleForm> {
                 decoration: InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'Wine Name',
-                ),
-              ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7.0),
-            ),
-            Padding(
-              child: TextFormField(
-                controller: widget._wineryController,
-                validator: (value) {
-                  if (value.isEmpty) {
-                    return 'Please enter a bottle winery';
-                  }
-                  return null;
-                },
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Winery',
                 ),
               ),
               padding:
