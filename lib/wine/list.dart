@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:gods_wine_locator/common/bottle.dart';
 
-// WineListView displays all the wines a user has
+// WineListView displays all the wines a user has in their cellar
 class WineListView extends StatefulWidget {
   final String _userID;
   final BottleUpdateService _updateService;
@@ -25,62 +25,69 @@ class _WineListViewState extends State<WineListView> {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Container();
-        return ListView.builder(
-          padding: const EdgeInsets.only(top: 20.0),
-          itemCount: snapshot.data.documents.length,
-          itemBuilder: (context, index) {
-            return _buildBottleItem(
-                context, snapshot.data.documents[index], widget._updateService);
-          },
-        );
-      },
-    );
-  }
-
-  // _buildBottleItem builds a single item in the bottle list
-  Widget _buildBottleItem(BuildContext context, DocumentSnapshot data,
-      BottleUpdateService bottleUpdateService) {
-    final _wine = Bottle.fromSnapshot(data);
-
-    // BottleListItem handles displaying basic wine info. BottleListItem allows for adding additional pieces to that item - such as an Edit button.
-    // The Edit button on the left to allow users to edit/delete wine in this list.
-    return BottleListItem(
-      bottle: _wine,
-      // Edit Button brings up a pop-up menu with delete and edit
-      trailing: PopupMenuButton(
-        icon: Icon(Icons.menu),
-        itemBuilder: (BuildContext context) {
-          return <PopupMenuItem>[
-            PopupMenuItem(
-                value: "delete",
-                child: ListTile(
-                  title: Text("Delete"),
-                  trailing: Icon(Icons.delete),
-                  onTap: () {
-                    Navigator.pop(context);
-                    bottleUpdateService.deleteBottle(_wine);
-                  },
-                )),
-            PopupMenuItem(
-              value: "edit",
-              child: ListTile(
-                title: Text("Edit"),
-                trailing: Icon(Icons.edit),
-                // Clicking edit brings up a dialogue to allow specifying the changes to make to the wine
-                onTap: () {
-                  Navigator.pop(context);
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return EditBottleDialog(bottleUpdateService, _wine);
-                    },
-                  );
-                },
+        // If the user doesn't have any wine, display a helpful message
+        if (snapshot.data.documents.length == 0)
+          return Container(
+            child: Center(
+              child: Text(
+                "Welcome to your wine cellar! \nClick the + button below to add wine.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ];
-        },
-      ),
+          );
+        // Display the users wine list
+        return ListView.builder(
+            padding: const EdgeInsets.only(top: 20.0),
+            itemCount: snapshot.data.documents.length,
+            itemBuilder: (context, index) {
+              final _wine = Bottle.fromSnapshot(snapshot.data.documents[index]);
+              // BottleListItem handles displaying basic wine info. BottleListItem allows for adding additional pieces to that item - such as an Edit button.
+              // The Edit button on the left to allow users to edit/delete wine in this list.
+              return BottleListItem(
+                bottle: _wine,
+                // Edit Button brings up a pop-up menu with delete and edit
+                trailing: PopupMenuButton(
+                  icon: Icon(Icons.menu),
+                  itemBuilder: (BuildContext context) {
+                    return <PopupMenuItem>[
+                      PopupMenuItem(
+                          value: "delete",
+                          child: ListTile(
+                            title: Text("Delete"),
+                            trailing: Icon(Icons.delete),
+                            onTap: () {
+                              Navigator.pop(context);
+                              widget._updateService.deleteBottle(_wine);
+                            },
+                          )),
+                      PopupMenuItem(
+                        value: "edit",
+                        child: ListTile(
+                          title: Text("Edit"),
+                          trailing: Icon(Icons.edit),
+                          // Clicking edit brings up a dialogue to allow specifying the changes to make to the wine
+                          onTap: () {
+                            Navigator.pop(context);
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return EditBottleDialog(
+                                    widget._updateService, _wine);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ];
+                  },
+                ),
+              );
+            });
+      },
     );
   }
 }
