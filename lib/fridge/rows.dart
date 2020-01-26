@@ -72,6 +72,12 @@ class _FridgeRowListViewState extends State<FridgeRowListView> {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Container();
+        // Convert the List<DocumentSnapshot> to a List<FridgeRows> using map()
+        List<FridgeRow> rows = snapshot.data.documents
+            .map((a) => FridgeRow.fromSnapshot(a))
+            .toList();
+        // Sort the rows by the row number
+        rows.sort((a, b) => a.number.compareTo(b.number));
         return Scaffold(
           appBar: AppBar(
             leading: FlatButton(
@@ -82,12 +88,11 @@ class _FridgeRowListViewState extends State<FridgeRowListView> {
           ),
           body: ListView.builder(
             padding: const EdgeInsets.only(top: 20.0),
-            itemCount: snapshot.data.documents.length,
+            itemCount: rows.length,
             //The `itemBuilder` callback will be called only with indices greater than
             //or equal to zero and less than `itemCount`.
             itemBuilder: (context, index) {
-              final _fridgeRow =
-                  FridgeRow.fromSnapshot(snapshot.data.documents[index]);
+              final _fridgeRow = rows[index];
               return Padding(
                 key: ValueKey(_fridgeRow._uid),
                 padding:
