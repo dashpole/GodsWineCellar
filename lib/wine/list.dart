@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:gods_wine_locator/common/bottle.dart';
+import 'package:gods_wine_cellar/common/bottle.dart';
 
 // WineListView displays all the wines a user has in their cellar
 class WineListView extends StatefulWidget {

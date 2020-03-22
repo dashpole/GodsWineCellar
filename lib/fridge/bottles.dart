@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:gods_wine_locator/common/bottle.dart';
+import 'package:gods_wine_cellar/common/bottle.dart';
 import 'fridges.dart';
 import 'rows.dart';
 

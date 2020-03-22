@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gods_wine_locator/common/bottle.dart';
+import 'package:gods_wine_cellar/common/bottle.dart';
 import 'rows.dart';
 import 'bottles.dart';
 import 'fridges.dart';

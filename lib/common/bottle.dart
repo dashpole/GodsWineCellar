@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:gods_wine_locator/fridge/fridges.dart';
-import 'package:gods_wine_locator/fridge/rows.dart';
+import 'package:gods_wine_cellar/fridge/fridges.dart';
+import 'package:gods_wine_cellar/fridge/rows.dart';
 
 // BottleListItem displays a list item with information about a bottle.  It
 // allows customizing the trailing widget at the right for adding buttons, etc.

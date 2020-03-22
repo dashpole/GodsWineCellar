@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="godswinelocator.gods_wine_locator">
+    package="godswinecellar.gods_wine_cellar">
+    versionCode=1
+    versionName=v0.1.0
 
     <!-- io.flutter.app.FlutterApplication is an android.app.Application that
          calls FlutterMain.startInitialization(this); in its onCreate method.
@@ -8,7 +10,7 @@
          FlutterApplication and put your custom class here. -->
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="gods_wine_locator"
+        android:label="gods_wine_cellar"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -30,4 +32,5 @@
             </intent-filter>
         </activity>
     </application>
+    <uses-permission android:name="andriod.permission.INTERNET"/>
 </manifest>

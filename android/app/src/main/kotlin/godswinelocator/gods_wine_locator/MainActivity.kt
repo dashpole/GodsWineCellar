@@ -1,4 +1,4 @@
-package godswinelocator.gods_wine_locator
+package godswinecellar.gods_wine_cellar
 
 import android.os.Bundle
 
