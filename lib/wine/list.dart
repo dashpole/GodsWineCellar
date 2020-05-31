@@ -202,6 +202,7 @@ class BottleFormState extends State<BottleForm> {
           children: <Widget>[
             Padding(
               child: TextFormField(
+                autofocus: true,
                 controller: widget._wineryController,
                 validator: (value) {
                   if (value.isEmpty) {
@@ -219,7 +220,6 @@ class BottleFormState extends State<BottleForm> {
             ),
             Padding(
               child: TextFormField(
-                autofocus: true,
                 controller: widget._nameController,
                 validator: (value) {
                   if (value.isEmpty) {
