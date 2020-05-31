@@ -22,6 +22,7 @@ class _WineListViewState extends State<WineListView> {
           .collection("users")
           .document(widget._userID)
           .collection("wines")
+          .orderBy('winery')
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Container();

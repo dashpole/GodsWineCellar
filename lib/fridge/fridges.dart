@@ -167,6 +167,7 @@ class _FridgeListViewState extends State<FridgeListView> {
           .collection("users")
           .document(widget._userID)
           .collection("fridges")
+          .orderBy('name')
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Container();

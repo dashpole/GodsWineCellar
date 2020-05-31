@@ -29,6 +29,7 @@ class _UnallocatedBottleListViewState extends State<UnallocatedBottleListView> {
             .collection("users")
             .document(widget._userID)
             .collection("unallocated")
+            .orderBy('winery')
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return Container();
