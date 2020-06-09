@@ -50,6 +50,48 @@ class _WineListViewState extends State<WineListView> {
               // The Edit button on the left to allow users to edit/delete wine in this list.
               return BottleListItem(
                 bottle: _wine,
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text("Wine Locations"),
+                        content: StreamBuilder<QuerySnapshot>(
+                          stream: Firestore.instance
+                              .collection("users")
+                              .document(widget._userID)
+                              .collection("wines")
+                              .document(
+                                  snapshot.data.documents[index].documentID)
+                              .collection("locations")
+                              .snapshots(),
+                          builder: (context, locationSnapshot) {
+                            if (!locationSnapshot.hasData)
+                              return Container(
+                                height: 500,
+                                width: 100,
+                              );
+                            return Container(
+                              height: 500,
+                              width: 100,
+                              child: ListView.builder(
+                                itemCount:
+                                    locationSnapshot.data.documents.length,
+                                itemBuilder: (context, locationIndex) {
+                                  return Container(
+                                    child: Text(locationSnapshot
+                                        .data.documents[locationIndex]
+                                        .toString()),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  );
+                },
                 // Edit Button brings up a pop-up menu with delete and edit
                 trailing: PopupMenuButton(
                   icon: Icon(Icons.menu),

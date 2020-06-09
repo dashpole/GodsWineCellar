@@ -9,10 +9,12 @@ import 'package:gods_wine_cellar/fridge/rows.dart';
 // allows customizing the trailing widget at the right for adding buttons, etc.
 class BottleListItem extends StatelessWidget {
   final Bottle bottle;
+  final GestureTapCallback onTap;
   final Widget trailing;
 
   const BottleListItem({
     this.trailing,
+    this.onTap,
     this.bottle,
   }) : assert(bottle != null);
 
@@ -26,6 +28,7 @@ class BottleListItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(5.0),
         ),
         child: ListTile(
+          onTap: this.onTap,
           title: Text(bottle._name),
           subtitle: Text(bottle._winery),
           trailing: Row(
