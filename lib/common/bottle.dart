@@ -192,6 +192,13 @@ class BottleUpdateService {
         });
       });
     });
+    QuerySnapshot locations = await _winesCollection
+        .document(bottle._uid)
+        .collection("locations")
+        .getDocuments();
+    await Future.forEach(locations.documents, (DocumentSnapshot location) {
+      batch.delete(location.reference);
+    });
     batch.delete(_winesCollection.document(bottle._uid));
     batch.delete(_unallocatedCollection.document(bottle._uid));
     return await batch.commit();
@@ -226,6 +233,15 @@ class BottleUpdateService {
       Map<String, dynamic> rowBottleData = unallocatedBottle.data;
       rowBottleData['count'] = countInRow;
       tx.set(rowBottleGroupReference, rowBottleData);
+
+      // Add the bottles to the bottle locations
+      FridgeLocation location =
+          FridgeLocation.fromFridgeAndRow(fridge, row, countInRow);
+      DocumentReference locationReference = _winesCollection
+          .document(unallocatedBottleUid)
+          .collection("locations")
+          .document(location.uid);
+      tx.set(locationReference, location.data);
 
       // Remove the bottles from the unallocated list
       Map<String, dynamic> unallocatedData = {
@@ -264,6 +280,18 @@ class BottleUpdateService {
         tx.delete(rowBottleReference);
       else
         tx.update(rowBottleReference, {'count': newAllocatedBottleCount});
+
+      // Remove the bottles to the bottle locations
+      FridgeLocation location =
+          FridgeLocation.fromFridgeAndRow(fridge, row, newAllocatedBottleCount);
+      DocumentReference locationReference = _winesCollection
+          .document(fridgeRowBottleUid)
+          .collection("locations")
+          .document(location.uid);
+      if (newAllocatedBottleCount == 0)
+        tx.delete(locationReference);
+      else
+        tx.set(locationReference, location.data);
 
       // Add the bottles to the unallocated list
       DocumentReference unallocatedReference =
@@ -344,4 +372,67 @@ class BottleUpdateService {
       }
     });
   }
+}
+
+class FridgeLocation {
+  final int _count;
+  final String _fridge;
+  final int _row;
+  final String _uid;
+
+  String get uid {
+    return _uid;
+  }
+
+  String get fridge {
+    return _fridge;
+  }
+
+  int get row {
+    return _row;
+  }
+
+  int get count {
+    return _count;
+  }
+
+  Map<String, dynamic> get data {
+    return {
+      'count': _count,
+      'fridge': _fridge,
+      'row': _row,
+    };
+  }
+
+  Map<String, dynamic> diff(String fridge, int row, int count) {
+    Map<String, dynamic> data = {};
+    if (fridge != _fridge) {
+      data['fridge'] = fridge;
+    }
+    if (row != _row) {
+      data['row'] = row;
+    }
+    if (count != _count) {
+      data['count'] = count;
+    }
+    return data;
+  }
+
+  FridgeLocation.fromSnapshot(DocumentSnapshot snapshot)
+      : assert(snapshot.data['fridge'] != null),
+        assert(snapshot.data['row'] != null),
+        assert(snapshot.data['count'] != null),
+        _fridge = snapshot.data['fridge'],
+        _row = snapshot.data['row'],
+        _count = snapshot.data['count'],
+        _uid = snapshot.documentID;
+
+  FridgeLocation.fromFridgeAndRow(Fridge fridge, FridgeRow row, int count)
+      : _uid = fridge.uid + row.number.toString(),
+        _fridge = fridge.name,
+        _row = row.number,
+        _count = count;
+
+  @override
+  String toString() => "Location<:$_fridge:$_row>: $_count bottles";
 }

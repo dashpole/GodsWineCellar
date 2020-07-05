@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:gods_wine_cellar/common/bottle.dart';
+import 'package:gods_wine_cellar/fridge/fridges.dart';
 
 // WineListView displays all the wines a user has in their cellar
 class WineListView extends StatefulWidget {
@@ -78,10 +79,9 @@ class _WineListViewState extends State<WineListView> {
                                 itemCount:
                                     locationSnapshot.data.documents.length,
                                 itemBuilder: (context, locationIndex) {
+                                  FridgeLocation location = FridgeLocation.fromSnapshot(locationSnapshot.data.documents[locationIndex]);
                                   return Container(
-                                    child: Text(locationSnapshot
-                                        .data.documents[locationIndex]
-                                        .toString()),
+                                    child: Text(location.toString()),
                                   );
                                 },
                               ),
