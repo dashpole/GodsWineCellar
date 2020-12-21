@@ -49,7 +49,7 @@ class FridgeRowUpdateService {
 class FridgeRowListView extends StatefulWidget {
   final String _userID;
   final Fridge _fridge;
-  final Function _navigateToRow;
+  final Function(Fridge, FridgeRow) _navigateToRow;
   final Function _back;
 
   FridgeRowListView(
