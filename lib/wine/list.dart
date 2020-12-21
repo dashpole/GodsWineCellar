@@ -56,7 +56,11 @@ class _WineListViewState extends State<WineListView> {
                     context: context,
                     builder: (context) {
                       return AlertDialog(
-                        title: Text(_wine.name+ ", "+ _wine.winery),
+                        title: Text(_wine.name + ", " + _wine.winery),
+                        // This amount of padding leaves the header and footer
+                        // visible behind the dialog.
+                        insetPadding:
+                            EdgeInsets.symmetric(horizontal: 20, vertical: 60),
                         content: StreamBuilder<QuerySnapshot>(
                           stream: Firestore.instance
                               .collection("users")
@@ -69,24 +73,48 @@ class _WineListViewState extends State<WineListView> {
                           builder: (context, locationSnapshot) {
                             if (!locationSnapshot.hasData)
                               return Container(
-                                height: 500,
-                                width: 100,
+                                height: 300,
+                                width: double.maxFinite,
                               );
                             return Container(
-                              height: 500,
-                              width: 100,
+                              width: double.maxFinite,
                               child: ListView.builder(
                                 itemCount:
-                                    locationSnapshot.data.documents.length+1,
+                                    locationSnapshot.data.documents.length + 1,
                                 itemBuilder: (context, locationIndex) {
-                                  if (locationIndex==locationSnapshot.data.documents.length)
-                                    return ListTile(title: Text("Total: "), trailing: Text(_wine.count.toString()+" bottles"));
-                                  FridgeLocation location = FridgeLocation.fromSnapshot(locationSnapshot.data.documents[locationIndex]);
+                                  if (locationIndex ==
+                                      locationSnapshot.data.documents.length)
+                                    return ListTile(
+                                        title: Text("Total: "),
+                                        trailing: Text(_wine.count.toString() +
+                                            " bottles"));
+                                  FridgeLocation location =
+                                      FridgeLocation.fromSnapshot(
+                                          locationSnapshot
+                                              .data.documents[locationIndex]);
                                   return Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(5.0),
+                                    ),
                                     child: ListTile(
-                                        title: Text(location.fridge+" fridge"),
-                                        subtitle: Text("Row: "+location.row.toString()),
-                                      trailing: Text(location.count.toString()+" bottles"),
+                                      title: Text(location.fridge + " fridge"),
+                                      subtitle: Text(
+                                          "Row: " + location.row.toString()),
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: <Widget>[
+                                          Text(location.count.toString() +
+                                              " bottles"),
+                                          IconButton(
+                                            icon: Icon(Icons.launch),
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                              // TODO Navigate to the location
+                                            },
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   );
                                 },
