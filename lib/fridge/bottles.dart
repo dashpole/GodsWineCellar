@@ -53,7 +53,7 @@ class _RowBottleListViewState extends State<RowBottleListView> {
               return BottleListItem(
                 bottle: _bottle,
                 trailing: RaisedButton(
-                  // TODO(lexi) change the subtract icon to something better.
+                  // TODO: Change this to a dropdown to EITHER consume or add to unallocated
                   child: Icon(
                     Icons.remove_circle,
                     color: Colors.indigoAccent,

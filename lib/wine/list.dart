@@ -56,7 +56,7 @@ class _WineListViewState extends State<WineListView> {
                     context: context,
                     builder: (context) {
                       return AlertDialog(
-                        title: Text("Wine Locations"),
+                        title: Text(_wine.name+ ", "+ _wine.winery),
                         content: StreamBuilder<QuerySnapshot>(
                           stream: Firestore.instance
                               .collection("users")
@@ -77,11 +77,17 @@ class _WineListViewState extends State<WineListView> {
                               width: 100,
                               child: ListView.builder(
                                 itemCount:
-                                    locationSnapshot.data.documents.length,
+                                    locationSnapshot.data.documents.length+1,
                                 itemBuilder: (context, locationIndex) {
+                                  if (locationIndex==locationSnapshot.data.documents.length)
+                                    return ListTile(title: Text("Total: "), trailing: Text(_wine.count.toString()+" bottles"));
                                   FridgeLocation location = FridgeLocation.fromSnapshot(locationSnapshot.data.documents[locationIndex]);
                                   return Container(
-                                    child: Text(location.toString()),
+                                    child: ListTile(
+                                        title: Text(location.fridge+" fridge"),
+                                        subtitle: Text("Row: "+location.row.toString()),
+                                      trailing: Text(location.count.toString()+" bottles"),
+                                    ),
                                   );
                                 },
                               ),
