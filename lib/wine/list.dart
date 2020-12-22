@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:gods_wine_cellar/common/bottle.dart';
+import 'package:gods_wine_cellar/main.dart';
 
 // WineListView displays all the wines a user has in their cellar
 class WineListView extends StatefulWidget {
@@ -15,7 +16,7 @@ class WineListView extends StatefulWidget {
 
 class _WineListViewState extends State<WineListView> {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext wineListContext) {
     // We use a StreamBuilder to rebuild the list of wines whenever the list in the database changes
     return StreamBuilder<QuerySnapshot>(
       stream: Firestore.instance
@@ -110,7 +111,9 @@ class _WineListViewState extends State<WineListView> {
                                             icon: Icon(Icons.launch),
                                             onPressed: () {
                                               Navigator.pop(context);
-                                              // TODO Navigate to the location
+                                              var _main = MainBody.of(wineListContext);
+                                              _main.navigateToFridgeView();
+                                              _main.navigateToRow(location.fridge, location.row);
                                             },
                                           ),
                                         ],

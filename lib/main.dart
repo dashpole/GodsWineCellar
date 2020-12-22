@@ -113,6 +113,10 @@ class _MainBodyState extends State<MainBody> {
     });
   }
 
+  void navigateToFridgeView() {
+    _onNavBarItemTapped(1);
+  }
+
   // _onNavBarItemTapped sets the index to the view that was tapped
   void _onNavBarItemTapped(int index) {
     setState(() => _selectedNavBarIndex = index);
