@@ -97,9 +97,10 @@ class _WineListViewState extends State<WineListView> {
                                       borderRadius: BorderRadius.circular(5.0),
                                     ),
                                     child: ListTile(
-                                      title: Text(location.fridge.name + " fridge"),
+                                      title: Text(
+                                          location.fridge.name + " fridge"),
                                       subtitle: Text(
-                                          "Row: " + location.row.toString()),
+                                          "Row: " + location.row.number.toString()),
                                       trailing: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: <Widget>[

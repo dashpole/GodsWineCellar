@@ -22,6 +22,7 @@ class _FridgeViewState extends State<FridgeView> {
   int _selectedIndex = 0;
   Fridge _fridge;
   FridgeRow _row;
+  // TODO move state management to main page so it can be accessed by wine list
 
   void _navigateBack() {
     // decrease _selectedIndex by 1, but take max so it can't go negative
