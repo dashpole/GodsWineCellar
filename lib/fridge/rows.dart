@@ -16,12 +16,24 @@ class FridgeRow {
         _capacity = snapshot.data['capacity'],
         _uid = snapshot.documentID;
 
+  FridgeRow.fromComponents(int number, int capacity, String uid)
+      : assert(number != null),
+        assert(capacity != null),
+        assert(uid != null),
+        _number = number,
+        _capacity = capacity,
+        _uid = uid;
+
   int get number {
     return _number;
   }
 
   int get capacity {
     return _capacity;
+  }
+
+  String get uid {
+    return _uid;
   }
 
   @override

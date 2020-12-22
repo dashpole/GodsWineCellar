@@ -13,6 +13,12 @@ class Fridge {
         _name = snapshot.data['name'],
         _uid = snapshot.documentID;
 
+  Fridge.fromComponents(String name, String uid)
+      : assert(name != null),
+        assert(uid != null),
+        _name = name,
+        _uid = uid;
+
   @override
   String toString() => "Fridge<$_name>";
 

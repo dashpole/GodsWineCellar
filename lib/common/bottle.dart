@@ -376,19 +376,19 @@ class BottleUpdateService {
 
 class FridgeLocation {
   final int _count;
-  final String _fridge;
-  final int _row;
+  final Fridge _fridge;
+  final FridgeRow _row;
   final String _uid;
 
   String get uid {
     return _uid;
   }
 
-  String get fridge {
+  Fridge get fridge {
     return _fridge;
   }
 
-  int get row {
+  FridgeRow get row {
     return _row;
   }
 
@@ -399,38 +399,27 @@ class FridgeLocation {
   Map<String, dynamic> get data {
     return {
       'count': _count,
-      'fridge': _fridge,
-      'row': _row,
+      'fridge': _fridge.name,
+      'fridgeUID': _fridge.uid,
+      'rowNumber': _row.number,
+      'rowCapacity': _row.capacity,
+      'rowUID': _row.uid,
     };
   }
 
-  Map<String, dynamic> diff(String fridge, int row, int count) {
-    Map<String, dynamic> data = {};
-    if (fridge != _fridge) {
-      data['fridge'] = fridge;
-    }
-    if (row != _row) {
-      data['row'] = row;
-    }
-    if (count != _count) {
-      data['count'] = count;
-    }
-    return data;
-  }
-
   FridgeLocation.fromSnapshot(DocumentSnapshot snapshot)
-      : assert(snapshot.data['fridge'] != null),
-        assert(snapshot.data['row'] != null),
-        assert(snapshot.data['count'] != null),
-        _fridge = snapshot.data['fridge'],
-        _row = snapshot.data['row'],
+      : assert(snapshot.data['count'] != null),
+        _fridge = Fridge.fromComponents(
+            snapshot.data['fridge'], snapshot.data['fridgeUID']),
+        _row = FridgeRow.fromComponents(snapshot.data['rowNumber'],
+            snapshot.data['rowCapacity'], snapshot.data['rowUID']),
         _count = snapshot.data['count'],
         _uid = snapshot.documentID;
 
   FridgeLocation.fromFridgeAndRow(Fridge fridge, FridgeRow row, int count)
       : _uid = fridge.uid + row.number.toString(),
-        _fridge = fridge.name,
-        _row = row.number,
+        _fridge = fridge,
+        _row = row,
         _count = count;
 
   @override
