@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'common/auth.dart';
 import 'wine/list.dart';
 import 'fridge/view.dart';
+import 'fridge/rows.dart';
+import 'fridge/fridges.dart';
+import 'dart:math';
 
 void main() => runApp(MyApp());
 
@@ -66,6 +69,10 @@ class _MyHomePageState extends State<MyHomePage> {
 class MainBody extends StatefulWidget {
   final AsyncSnapshot<FirebaseUser> _user;
 
+  static of(BuildContext context, {bool root = false}) => root
+      ? context.findRootAncestorStateOfType<_MainBodyState>()
+      : context.findAncestorStateOfType<_MainBodyState>();
+
   MainBody(this._user);
 
   @override
@@ -76,11 +83,39 @@ class _MainBodyState extends State<MainBody> {
   // _selectedIndex keeps track of which of the views we are in: Wine List, or Fridge List
   // The position of each element in the list of widgets below defines the index that selects that view.
   // We just need to ensure that the index of the list view and navigation bar items are in the same position in their respective lists.
-  int _selectedIndex = 0;
+  int _selectedNavBarIndex = 0;
+  //_selectedNavBarIndex refers to the selected view from the list of possible views (FridgeList, FridgeRow, RowBottle)
+
+  int _selectedFridgeIndex = 0;
+  Fridge _selectedFridge;
+  FridgeRow _selectedRow;
+
+  void navigateBackInFridgeView() {
+    // decrease _selectedIndex by 1, but take max so it can't go negative
+    setState(
+        () => _selectedFridgeIndex = [0, _selectedFridgeIndex - 1].reduce(max));
+  }
+
+  // navigate to the individual fridge view
+  void navigateToFridge(Fridge _newFridge) {
+    setState(() {
+      _selectedFridge = _newFridge;
+      _selectedFridgeIndex = 1;
+    });
+  }
+
+  // navigate to an individual fridge row, which contains bottles
+  void navigateToRow(Fridge _newFridge, FridgeRow _newRow) {
+    setState(() {
+      _selectedFridge = _newFridge;
+      _selectedRow = _newRow;
+      _selectedFridgeIndex = 2;
+    });
+  }
 
   // _onNavBarItemTapped sets the index to the view that was tapped
   void _onNavBarItemTapped(int index) {
-    setState(() => _selectedIndex = index);
+    setState(() => _selectedNavBarIndex = index);
   }
 
   @override
@@ -93,8 +128,9 @@ class _MainBodyState extends State<MainBody> {
       body: <Widget>[
         // Only the selected view is displayed
         WineListView(widget._user.data.uid),
-        FridgeView(widget._user.data.uid),
-      ][_selectedIndex],
+        FridgeView(widget._user.data.uid, _selectedFridgeIndex, _selectedFridge,
+            _selectedRow),
+      ][_selectedNavBarIndex],
       // This is the button for adding a new bottle of wine
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
@@ -121,7 +157,7 @@ class _MainBodyState extends State<MainBody> {
               title: Text("Fridge List"),
             ),
           ],
-          currentIndex: _selectedIndex,
+          currentIndex: _selectedNavBarIndex,
           onTap: _onNavBarItemTapped,
         ),
       ),

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:gods_wine_cellar/main.dart';
 import 'fridges.dart';
 
 class FridgeRow {
@@ -61,11 +62,8 @@ class FridgeRowUpdateService {
 class FridgeRowListView extends StatefulWidget {
   final String _userID;
   final Fridge _fridge;
-  final Function(Fridge, FridgeRow) _navigateToRow;
-  final Function _back;
 
-  FridgeRowListView(
-      this._userID, this._fridge, this._back, this._navigateToRow);
+  FridgeRowListView(this._userID, this._fridge);
 
   @override
   _FridgeRowListViewState createState() => _FridgeRowListViewState();
@@ -95,7 +93,7 @@ class _FridgeRowListViewState extends State<FridgeRowListView> {
           appBar: AppBar(
             leading: FlatButton(
               child: Icon(Icons.arrow_back),
-              onPressed: widget._back,
+              onPressed: MainBody.of(context).navigateBackInFridgeView,
             ),
             title: Text('${widget._fridge.name} fridge'),
           ),
@@ -117,8 +115,8 @@ class _FridgeRowListViewState extends State<FridgeRowListView> {
                   ),
                   child: ListTile(
                     title: Text("Fridge Row Number: ${_fridgeRow._number}"),
-                    onTap: () =>
-                        (widget._navigateToRow(widget._fridge, _fridgeRow)),
+                    onTap: () => (MainBody.of(context)
+                        .navigateToRow(widget._fridge, _fridgeRow)),
                   ),
                 ),
               );

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:gods_wine_cellar/main.dart';
 import 'rows.dart';
 
 class Fridge {
@@ -153,11 +154,9 @@ class FridgeFormState extends State<FridgeForm> {
 
 class FridgeListView extends StatefulWidget {
   final String _userID;
-  final Function(Fridge) _navigateToFridge;
   final FridgeUpdateService _updateService;
 
-  FridgeListView(this._userID, this._navigateToFridge)
-      : _updateService = FridgeUpdateService(_userID);
+  FridgeListView(this._userID) : _updateService = FridgeUpdateService(_userID);
 
   @override
   _FridgeListViewState createState() => _FridgeListViewState();
@@ -282,7 +281,7 @@ class _FridgeListViewState extends State<FridgeListView> {
                           ],
                         );
                       }),
-                  onTap: () => (widget._navigateToFridge(_fridge)),
+                  onTap: () => (MainBody.of(context).navigateToFridge(_fridge)),
                 ),
               ),
             );

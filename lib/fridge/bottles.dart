@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:gods_wine_cellar/common/bottle.dart';
 import 'fridges.dart';
 import 'rows.dart';
+import 'package:gods_wine_cellar/main.dart';
 
 class RowBottleListView extends StatefulWidget {
   final String _userID;
   final Fridge _fridge;
   final FridgeRow _row;
-  final Function() _navigateBack;
   final Function(Bottle, int) _removeBottleFromFridgeRow;
 
-  RowBottleListView(this._userID, this._fridge, this._row, this._navigateBack,
-      this._removeBottleFromFridgeRow);
+  RowBottleListView(
+      this._userID, this._fridge, this._row, this._removeBottleFromFridgeRow);
 
   @override
   _RowBottleListViewState createState() => _RowBottleListViewState();
@@ -37,7 +37,7 @@ class _RowBottleListViewState extends State<RowBottleListView> {
           appBar: AppBar(
             leading: FlatButton(
               child: Icon(Icons.arrow_back),
-              onPressed: widget._navigateBack,
+              onPressed: MainBody.of(context).navigateBackInFridgeView,
             ),
             title: Text(
                 '${widget._fridge.name} fridge, row ${widget._row.number}'),
