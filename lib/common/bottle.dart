@@ -252,6 +252,92 @@ class BottleUpdateService {
     });
   }
 
+  // drinkBottleFromFridge removes numToMove bottles from the specified FridgeRow.
+  Future drinkBottleFromFridge(
+      String fridgeRowBottleUid, Fridge fridge, FridgeRow row) async {
+    return await Firestore.instance.runTransaction((Transaction tx) async {
+      DocumentSnapshot fridgeRowBottleSnapshot = await tx.get(_fridgesCollection
+          .document(fridge.uid)
+          .collection("rows")
+          .document(row.number.toString())
+          .collection("bottles")
+          .document(fridgeRowBottleUid));
+      Bottle fridgeRowBottle = Bottle.fromSnapshot(fridgeRowBottleSnapshot);
+      if (1 > fridgeRowBottle.count) {
+        throw ("Can't drink a bottle, since you only have ${fridgeRowBottle.count} in the row");
+      }
+      DocumentReference wineBottleReference =
+          _winesCollection.document(fridgeRowBottleUid);
+      DocumentSnapshot wineBottleSnapshot = await tx.get(wineBottleReference);
+      Bottle wineBottle = Bottle.fromSnapshot(wineBottleSnapshot);
+      if (1 > wineBottle.count) {
+        throw ("Can't drink a bottle, since you only have ${wineBottle.count} left");
+      }
+
+      // Remove the bottle from the row
+      int newAllocatedBottleCount = fridgeRowBottle.count - 1;
+      DocumentReference rowBottleReference = _fridgesCollection
+          .document(fridge.uid)
+          .collection("rows")
+          .document(row.number.toString())
+          .collection("bottles")
+          .document(fridgeRowBottle.uid);
+      if (newAllocatedBottleCount == 0)
+        tx.delete(rowBottleReference);
+      else
+        tx.update(rowBottleReference, {'count': newAllocatedBottleCount});
+
+      // Remove the bottle from the wine list.
+      int newWineBottleCount = wineBottle.count - 1;
+      if (newWineBottleCount == 0)
+        tx.delete(wineBottleReference);
+      else
+        tx.update(wineBottleReference, {'count': newWineBottleCount});
+
+      // Remove the bottles from the bottle locations
+      FridgeLocation location =
+          FridgeLocation.fromFridgeAndRow(fridge, row, newAllocatedBottleCount);
+      DocumentReference locationReference = _winesCollection
+          .document(fridgeRowBottleUid)
+          .collection("locations")
+          .document(location.uid);
+      if (newAllocatedBottleCount == 0)
+        tx.delete(locationReference);
+      else
+        tx.set(locationReference, location.data);
+    });
+  }
+
+  // drinkUnallocatedBottle removes numToMove bottles from the unallocated list.
+  Future drinkUnallocatedBottle(String bottleUid) async {
+    return await Firestore.instance.runTransaction((Transaction tx) async {
+      DocumentReference wineBottleReference =
+          _winesCollection.document(bottleUid);
+      DocumentSnapshot wineBottleSnapshot = await tx.get(wineBottleReference);
+      Bottle wineBottle = Bottle.fromSnapshot(wineBottleSnapshot);
+      if (1 > wineBottle.count) {
+        throw ("Can't drink a bottle, since you only have ${wineBottle.count} left");
+      }
+
+      // Remove the bottle from the wine list.
+      int newWineBottleCount = wineBottle.count - 1;
+      if (newWineBottleCount == 0)
+        tx.delete(wineBottleReference);
+      else
+        tx.update(wineBottleReference, {'count': newWineBottleCount});
+
+      // Remove the bottle from the unallocated list
+      DocumentReference unallocatedReference =
+          _unallocatedCollection.document(bottleUid);
+      DocumentSnapshot unallocatedDocument = await unallocatedReference.get();
+      Bottle unallocatedBottle = Bottle.fromSnapshot(unallocatedDocument);
+      if (1 > unallocatedBottle.count) {
+        throw ("Can't drink a bottle, since you only have ${unallocatedBottle.count} unallocated bottles left");
+      }
+      tx.update(unallocatedReference, {'count': unallocatedBottle.count - 1});
+    });
+  }
+
   // removeFromFridge removes numToMove bottles from the specified FridgeRow,
   // and adds them to the unallocated list.
   Future removeFromFridge(String fridgeRowBottleUid, Fridge fridge,

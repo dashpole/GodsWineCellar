@@ -9,10 +9,11 @@ class RowBottleListView extends StatefulWidget {
   final String _userID;
   final Fridge _fridge;
   final FridgeRow _row;
-  final Function(Bottle, int) _removeBottleFromFridgeRow;
+  final Function(Bottle) _removeBottleFromFridgeRow;
+  final Function(Bottle) _drinkBottle;
 
-  RowBottleListView(
-      this._userID, this._fridge, this._row, this._removeBottleFromFridgeRow);
+  RowBottleListView(this._userID, this._fridge, this._row,
+      this._removeBottleFromFridgeRow, this._drinkBottle);
 
   @override
   _RowBottleListViewState createState() => _RowBottleListViewState();
@@ -52,21 +53,40 @@ class _RowBottleListViewState extends State<RowBottleListView> {
                   Bottle.fromSnapshot(snapshot.data.documents[index]);
               return BottleListItem(
                 bottle: _bottle,
-                trailing: RaisedButton(
-                  // TODO: Change this to a dropdown to EITHER consume or add to unallocated
-                  child: Icon(
-                    Icons.remove_circle,
-                    color: Colors.indigoAccent,
-                  ),
-                  onPressed: () async {
-                    try {
-                      await widget._removeBottleFromFridgeRow(_bottle, 1);
-                    } catch (e) {
-                      Scaffold.of(context).showSnackBar(SnackBar(
-                        content: Text(e.toString()),
-                      ));
-                    }
-                  },
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    RaisedButton(
+                      child: Icon(
+                        Icons.wine_bar_rounded,
+                        color: Colors.indigoAccent,
+                      ),
+                      onPressed: () async {
+                        try {
+                          await widget._drinkBottle(_bottle);
+                        } catch (e) {
+                          Scaffold.of(context).showSnackBar(SnackBar(
+                            content: Text(e.toString()),
+                          ));
+                        }
+                      },
+                    ),
+                    RaisedButton(
+                      child: Icon(
+                        Icons.arrow_downward_rounded,
+                        color: Colors.indigoAccent,
+                      ),
+                      onPressed: () async {
+                        try {
+                          await widget._removeBottleFromFridgeRow(_bottle);
+                        } catch (e) {
+                          Scaffold.of(context).showSnackBar(SnackBar(
+                            content: Text(e.toString()),
+                          ));
+                        }
+                      },
+                    ),
+                  ],
                 ),
               );
             },

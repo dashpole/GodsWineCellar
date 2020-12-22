@@ -7,13 +7,15 @@ class UnallocatedBottleListView extends StatefulWidget {
   final String _userID;
 
   // _addBottleToFridgeRow makes the required calls to the database to move _count_ bottle(s) from the unallocated list to a row in a fridge
-  final Function(Bottle, int) _addBottleToFridgeRow;
+  final Function(Bottle) _addBottleToFridgeRow;
+
+  final Function(Bottle) _drinkBottle;
 
   // If true, allow users to move wines out of the unallocated list to a fridge
   final bool _showAddButton;
 
-  UnallocatedBottleListView(
-      this._userID, this._addBottleToFridgeRow, this._showAddButton);
+  UnallocatedBottleListView(this._userID, this._addBottleToFridgeRow,
+      this._drinkBottle, this._showAddButton);
 
   @override
   _UnallocatedBottleListViewState createState() =>
@@ -51,24 +53,43 @@ class _UnallocatedBottleListViewState extends State<UnallocatedBottleListView> {
                   // The Edit button on the left to allow users to edit/delete wine in this list.
                   return BottleListItem(
                     bottle: _bottle,
-                    trailing: widget._showAddButton
-                        ? RaisedButton(
-                            // TODO(lexi) change the add icon to something better.
-                            child: Icon(
-                              Icons.add,
-                              color: Colors.indigoAccent,
-                            ),
-                            onPressed: () async {
-                              try {
-                                await widget._addBottleToFridgeRow(_bottle, 1);
-                              } catch (e) {
-                                Scaffold.of(context).showSnackBar(SnackBar(
-                                  content: Text(e.toString()),
-                                ));
-                              }
-                            },
-                          )
-                        : Container(),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        RaisedButton(
+                          child: Icon(
+                            Icons.wine_bar_rounded,
+                            color: Colors.indigoAccent,
+                          ),
+                          onPressed: () async {
+                            try {
+                              await widget._drinkBottle(_bottle);
+                            } catch (e) {
+                              Scaffold.of(context).showSnackBar(SnackBar(
+                                content: Text(e.toString()),
+                              ));
+                            }
+                          },
+                        ),
+                        widget._showAddButton
+                            ? RaisedButton(
+                                child: Icon(
+                                  Icons.arrow_upward_rounded,
+                                  color: Colors.indigoAccent,
+                                ),
+                                onPressed: () async {
+                                  try {
+                                    await widget._addBottleToFridgeRow(_bottle);
+                                  } catch (e) {
+                                    Scaffold.of(context).showSnackBar(SnackBar(
+                                      content: Text(e.toString()),
+                                    ));
+                                  }
+                                },
+                              )
+                            : Container(),
+                      ],
+                    ),
                   );
                 },
               ),

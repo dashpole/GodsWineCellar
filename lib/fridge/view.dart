@@ -21,17 +21,26 @@ class FridgeView extends StatefulWidget {
 
 class _FridgeViewState extends State<FridgeView> {
   // adds a bottle to the current fridge row from the unallocated bottles list
-  Future<void> _addBottlesToFridgeRow(
-      Bottle unallocatedBottle, int count) async {
-    await widget._bottleUpdateService.moveToFridge(
-        unallocatedBottle.uid, widget._fridge, widget._row, count);
+  Future<void> _addBottlesToFridgeRow(Bottle unallocatedBottle) async {
+    await widget._bottleUpdateService
+        .moveToFridge(unallocatedBottle.uid, widget._fridge, widget._row, 1);
   }
 
   // moves a bottle from the current fridge row to the unallocated bottles list
-  Future<void> _removeBottlesFromFridgeRow(
-      Bottle fridgeRowBottle, int count) async {
-    await widget._bottleUpdateService.removeFromFridge(
-        fridgeRowBottle.uid, widget._fridge, widget._row, count);
+  Future<void> _removeBottlesFromFridgeRow(Bottle fridgeRowBottle) async {
+    await widget._bottleUpdateService
+        .removeFromFridge(fridgeRowBottle.uid, widget._fridge, widget._row, 1);
+  }
+
+  // moves a bottle from the current fridge row to the unallocated bottles list
+  Future<void> _drinkBottleFromFridge(Bottle fridgeRowBottle) async {
+    await widget._bottleUpdateService.drinkBottleFromFridge(
+        fridgeRowBottle.uid, widget._fridge, widget._row);
+  }
+
+  // moves a bottle from the current fridge row to the unallocated bottles list
+  Future<void> _drinkUnallocatedBottle(Bottle bottle) async {
+    await widget._bottleUpdateService.drinkUnallocatedBottle(bottle.uid);
   }
 
   @override
@@ -44,7 +53,7 @@ class _FridgeViewState extends State<FridgeView> {
             FridgeListView(widget._userID),
             FridgeRowListView(widget._userID, widget._fridge),
             RowBottleListView(widget._userID, widget._fridge, widget._row,
-                _removeBottlesFromFridgeRow),
+                _removeBottlesFromFridgeRow, _drinkBottleFromFridge),
           ][widget._selectedIndex],
         ),
         ExpansionTile(
@@ -52,7 +61,7 @@ class _FridgeViewState extends State<FridgeView> {
           title: Text("Unallocated Wines"),
           children: <Widget>[
             UnallocatedBottleListView(widget._userID, _addBottlesToFridgeRow,
-                widget._selectedIndex == 2),
+                _drinkUnallocatedBottle, widget._selectedIndex == 2),
           ],
         ),
         Container(height: 20),
